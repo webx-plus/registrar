@@ -299,6 +299,19 @@ blockquote, pre, code {
     outline: none;
 }
 
+.cf-turnstile {
+    border: 1px solid transparent;
+    margin: 20px 0;
+    display: block;
+    width: fit-content;
+    height: 68px;
+}
+
+.cf-turnstile.input-error {
+    border-color: var(--wxp-clr-danger-400);
+}
+
+
 .label {
     display: block;
     letter-spacing: .5px;
