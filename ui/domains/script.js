@@ -50,6 +50,9 @@ document.addEventListener("DOMContentLoaded", async() => {
         const registerForm = document.querySelector("#domainRegisterForm");
         registerForm.addEventListener("submit", async e => {
             e.preventDefault();
+            const button = registerForm.querySelector("button[type='submit']");
+            if (button.dataset.actionState === "loading") return;
+            button.dataset.actionState = "loading";
             const error = registerForm.querySelector(".form-result");
             error.innerText = "";
             try {
@@ -111,12 +114,16 @@ document.addEventListener("DOMContentLoaded", async() => {
             } catch (e) {
                 console.error(e);
                 error.innerText = e.message;
-            }
+            };
+            button.dataset.actionState = "save";
         });
 
         const recordCreateForm = document.querySelector("#recordCreateForm");
         recordCreateForm.addEventListener("submit", async e => {
             e.preventDefault();
+            const button = recordCreateForm.querySelector("button[type='submit']");
+            if (button.dataset.actionState === "loading") return;
+            button.dataset.actionState = "loading";
             const error = recordCreateForm.querySelector(".form-result");
             error.innerText = "";
             try {
@@ -168,7 +175,8 @@ document.addEventListener("DOMContentLoaded", async() => {
             } catch (e) {
                 console.error(e);
                 error.innerText = e.message;
-            }
+            };
+            button.dataset.actionState = "save";
         });
 
         loadTlds();

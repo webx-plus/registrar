@@ -3,6 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     loginForm.addEventListener("submit", async e => {
         e.preventDefault();
+        const button = loginForm.querySelector("button[type='submit']");
+        if (button.dataset.actionState === "loading") return;
+        button.dataset.actionState = "loading";
         const error = loginForm.querySelector(".form-result");
         error.innerText = "";
         try {
@@ -56,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             console.error(e);
             error.innerText = e.message;
-        }
+        };
+        button.dataset.actionState = "save";
     });
 });

@@ -423,6 +423,22 @@ blockquote, pre, code {
     scale: 1.1;
 }
 
+.button[data-action-state="loading"] {
+    opacity: 0;
+}
+.button[data-action-state="loading"]::before {
+    content: "\eb45";
+    font-family: "Boxicons";
+    font-size: 20px;
+    color: var(--wxp-clr-text-100);
+    animation: button-loader-spin 1s linear infinite;
+}
+
+@keyframes button-loader-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 
 
 .dropdown {
