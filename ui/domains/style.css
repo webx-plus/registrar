@@ -7,6 +7,18 @@
     min-width: 150px;
 }
 
+.domain-created {
+    background: var(--wxp-clr-danger-800);
+    border: 1px solid var(--wxp-clr-dark-300);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.domain-created b {
+    color: var(--wxp-clr-text-200);
+}
+
+
 /* https://codepen.io/vineethtrv/pen/NWxZqMM */
 .domain-loader {
     background: var(--wxp-clr-text-100);

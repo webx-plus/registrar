@@ -24,6 +24,29 @@ document.addEventListener("DOMContentLoaded", async() => {
             });
         };
 
+        if (sessionStorage.getItem("domain_create_key")) {
+            const notice = document.createElement("div");
+            notice.classList.add("domain-created");
+            notice.innerHTML = `
+                <div class="flex v-center gap-050">
+                    <h3 class="h5">Domain Key</h3>
+                    <button class="push-right nostyles pointer" onclick="this.closest('.domain-created').remove()">
+                        <i class="bx bx-x"></i>
+                    </button>
+                </div>
+                <p>Here is the Domain Key for <b>${sessionStorage.getItem("domain_create_name") ?? "domain"}</b>. Keep it somewhere safe as you won't be able to view it again</p>
+                <div class="flex v-center gap-100">
+                    <p><code>${sessionStorage.getItem("domain_create_key")}</code></p>
+                    <button class="nostyles pointer" onclick="navigator.clipboard.writeText('${sessionStorage.getItem("domain_create_key")}')">
+                        <i class="bx bx-copy"></i>
+                    </button>
+                </div>
+            `;
+            sessionStorage.removeItem("domain_create_key");
+            sessionStorage.removeItem("domain_create_name");
+            document.querySelector("#domainList").insertBefore(notice, document.querySelector("#domainContainer"));
+        };
+
         const registerForm = document.querySelector("#domainRegisterForm");
         registerForm.addEventListener("submit", async e => {
             e.preventDefault();
@@ -78,6 +101,8 @@ document.addEventListener("DOMContentLoaded", async() => {
                         error.style.color = "var(--wxp-clr-success-400)";
                         const data = await request.json();
                         sessionStorage.setItem("domain_selected_reload", data.data._id);
+                        sessionStorage.setItem("domain_create_key", data.data.secret);
+                        sessionStorage.setItem("domain_create_name", `${data.data.name}.${data.data.tld}`);
                         location.reload();
                     } else {
                         error.innerText = `Request failed (${request.status})`;
@@ -146,6 +171,8 @@ document.addEventListener("DOMContentLoaded", async() => {
             }
         });
 
+        loadTlds();
+
         const request = await fetch("/api/domains/?owned=true", {
             method: "GET",
             headers: {
@@ -176,8 +203,6 @@ document.addEventListener("DOMContentLoaded", async() => {
         } else {
             renderPage(result.data);
         };
-    
-        loadTlds();
 
         const domainSearch = document.querySelector("#domainSearch");
         domainSearch.addEventListener("input", () => renderPage(result.data));
