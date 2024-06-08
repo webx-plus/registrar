@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <!-- SEO and that -->
+    <meta name="author" content="WebX+ Domains">
+    <meta name="title" content="Login - WebX+ Domains">
+    <meta name="description" content="Register & manager your WebX+ domains">
+    <meta name="keywords" content="WebX+ Domains">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:locale" content="en_UK">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="WebX+ Domains">
+    <meta property="og:title" content="Login - WebX+ Domains">
+    <meta property="og:description" content="Register & manager your WebX+ domains">
+    <meta property="og:image" content="/assets/favicon.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary">
+    <meta property="twitter:title" content="Login - WebX+ Domains">
+    <meta property="twitter:description" content="Register & manager your WebX+ domains">
+    <meta property="twitter:image" content="/assets/favicon.png">
+
+    <link rel="shortcut icon" href="/assets/favicon.png">
+    <link rel="stylesheet" href="/global.css">
+    <link rel="stylesheet" href="/login/style.css">
+
+    <script src="/global.js" defer></script>
+    <script src="/login/script.js"></script>
+
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" crossorigin="anonymous" async defer></script>
+
+    <title>Login - WebX+ Domains</title>
+</head>
+<body>
+    <header class="flex v-center">
+        <a href="/">
+            <img src="/assets/banner.png" alt="WebX+ Logo">
+        </a>
+        <h1>WebX+ Domains</h1>
+        <div class="push-right" id="navAccount">
+            <a href="/login" class="login-button">Login</a>
+            <div class="dropdown" id="navAccountDropdown">
+                <button class="dropdown-toggle nostyles pointer">
+                    <i class="bx bx-user" aria-label="Account dropdown"></i>
+                </button>
+                <div class="dropdown-menu">
+                    <div>
+                        <p class="nav-account-label">Logged in as</p>
+                        <p id="navAccountName"></p>
+                    </div>
+                    <a class="dropdown-item" href="/domains">My Domains</a>
+                    <a class="dropdown-item" href="/account">My Account</a>
+                    <button class="dropdown-item" id="navAccountLogout">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="form-wrapper">
+            <h2 class="h2">Login</h2>
+            <p>Don't have an account? <a href="/register">Register</a></p>
+            <form id="loginForm">
+                <div>
+                    <label for="loginUsername" class="label">Username</label>
+                    <input type="text" class="input" id="loginUsername" required>
+                </div>
+                <div>
+                    <label for="loginPassword" class="label">Password</label>
+                    <input type="password" class="input" id="loginPassword" required>
+                </div>
+                <div class="cf-turnstile" data-sitekey="0x4AAAAAAAbvf74ep4tJrq3W" data-callback="captchaVerify"></div>
+                <div class="flex v-center gap-200">
+                    <button type="submit" class="button">Login</button>
+                    <p class="form-result" id="loginError"></p>
+                </div>
+            </form>
+        </div>
+    </main>
+    <footer class="flex v-center h-center gap-100">
+        <a href="/">
+            <img src="/assets/footer.png" alt="WebX+ Logo" />
+        </a>
+        <p class="footer-text">&copy; 2024 WebX+</p>
+        <a href="https://discord.gg/b5CYjbfHRK" target="_blank">Discord</a>
+        <a href="https://github.com/webx-plus" target="_blank">GitHub</a>
+    </footer>
+</body>
+</html>
