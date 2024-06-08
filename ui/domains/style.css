@@ -1,0 +1,181 @@
+.domain-create {
+    font-weight: 800;
+    color: var(--wxp-clr-primary-600);
+}
+
+#domainRegisterTld {
+    min-width: 150px;
+}
+
+/* https://codepen.io/vineethtrv/pen/NWxZqMM */
+.domain-loader {
+    background: var(--wxp-clr-text-100);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    margin-block: 20px;
+    position: relative;
+    display: inline-block;
+    width: 0;
+    height: 4.8px;
+    animation: domainLoaderForward 6s linear infinite;
+}
+.domain-loader::after, .domain-loader::before {
+    content: "";
+    background: var(--wxp-clr-text-100);
+    position: absolute;
+    top: 9px;
+    right: -2px;
+    width: 10px;
+    height: 1px;
+    opacity: 0;
+    transform: rotate(-45deg) translateX(0px);
+    animation: domainLoaderColi1 0.3s linear infinite;
+}
+.domain-loader::before {
+    top: -4px;
+    transform: rotate(45deg);
+    animation: domainLoaderColi2 0.3s linear infinite;
+}
+
+@keyframes domainLoaderForward {
+    0% { width: 0 }
+    100% { width:100% }
+}
+@keyframes domainLoaderColi1 {
+    0% { transform: rotate(-45deg) translateX(0px); opacity: 0.7; }
+    100% { transform: rotate(-45deg) translateX(-45px); opacity: 0; }
+}
+@keyframes domainLoaderColi2 {
+    0% { transform: rotate(45deg) translateX(0px); opacity: 1; }
+    100% { transform: rotate(45deg) translateX(-45px); opacity: 0.7 ;}
+}
+
+#domainSearch {
+    max-width: 500px;
+}
+
+.domain-pages {
+    padding: 10px;
+}
+.domain-pages span {
+    font-weight: 600;
+    color: var(--wxp-clr-text-200);
+}
+.domain-page-controls {
+    border: 1px solid var(--wxp-clr-dark-400);
+    border-radius: 5px;
+    overflow: hidden;
+}
+.domain-page-control:not(:last-child) {
+    border-right: 1px solid var(--wxp-clr-dark-400);
+}
+.domain-page-control {
+    display: grid;
+    place-content: center;
+    width: 30px;
+    aspect-ratio: 1 / 1;
+    color: var(--wxp-clr-text-200);
+}
+.domain-page-control[data-page-current="true"] {
+    background: var(--wxp-clr-dark-400);
+}
+
+
+.domain-card {
+    border-bottom: 1px solid var(--wxp-clr-dark-400);
+    padding: 10px;
+    display: grid;
+    grid-template-rows: auto 0fr;
+    transition: .3s;
+    overflow: hidden;
+}
+.domain-card[aria-expanded="true"] {
+    grid-template-rows: auto 1fr;
+}
+.domain-card > * {
+    overflow: hidden;
+}
+
+.domain-edit-button {
+    display: flex;
+    transition: .3s;
+}
+.domain-edit-button[data-action-state="edit"] {
+    color: var(--wxp-clr-text-600);
+}
+.domain-edit-button[data-action-state="error"] {
+    color: var(--wxp-clr-danger-400);
+}
+.domain-edit-button[data-action-state="saved"] {
+    color: var(--wxp-clr-success-400);
+}
+
+p.domain-edit-button[data-action-state="edit"],
+p.domain-edit-button[data-action-state="save"] {
+    display: none;
+}
+
+.domain-card [contenteditable="true"] {
+    border: 1px solid var(--wxp-clr-text-600);
+    border-radius: 5px;
+    padding: 1px 5px;
+    min-width: min(100%, 25ch);
+    font-size: .9em;
+}
+.domain-card [contenteditable="true"]:is(:hover, :focus-visible) {
+    outline: 1px solid transparent;
+}
+
+.domain-expand-button {
+    margin-left: -10px;
+    display: grid;
+    place-items: center;
+    font-size: 40px;
+    color: var(--wxp-clr-text-600);
+    cursor: pointer;
+}
+.domain-expand-button i {
+    transition: .3s;
+}
+.domain-card[aria-expanded="true"] .domain-expand-button i {
+    rotate: 90deg;
+}
+.domain-details h3 {
+    font-family: var(--wxp-ff-mono);
+}
+.domain-tld {
+    color: var(--wxp-clr-text-600);
+    font-size: 0.9em;
+}
+
+.domain-note:not([contenteditable="true"]):empty::before {
+    content: "Click to add note";
+    font-style: italic;
+    color: var(--wxp-clr-text-600);
+    cursor: text;
+}
+.domain-note:not([contenteditable="true"]):empty + .domain-edit-button:not([data-action-state="error"]) {
+    display: none;
+}
+.domain-body {
+    padding-left: 30px;
+}
+
+.domain-heading {
+    margin-block: 10px 5px;
+    letter-spacing: .2px;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--wxp-clr-text-200);
+}
+
+.domain-target {
+    font-family: var(--wxp-ff-mono);
+}
+
+.record-name {
+    font-size: 18px;
+    color: var(--wxp-clr-text-100);
+}
+.record-domain {
+    color: var(--wxp-clr-text-600);
+}
