@@ -318,7 +318,7 @@ web_server.get("/api/account", async (req, res) => {
 web_server.patch("/api/account", async (req, res) => {
     try {
         if (!req.headers.authorization || !req.headers.authorization.startsWith("User")) return res.status(401).json({success: false, error: "Missing or invalid authorization type"});
-        let user = await authorizeUser(req.headers.authorization, false, true);
+        let user = await authorizeUser(req.headers.authorization);
         if (!user) return res.status(401).json({success: false, error: "Invalid authorization header"});
 
         const sensitive_fields = ["password", "email", "username"];
@@ -345,6 +345,58 @@ web_server.patch("/api/account", async (req, res) => {
 
         if (req.body.email) await createVerificationEmail(result);
 
+        return res.status(200).json({
+            success: true,
+            data: formatUserResponse(result)
+        });
+    } catch(e) {
+        console.log(e);
+        return res.status(500).json({
+            success: false,
+            error: e.toString()
+        });
+    };
+});
+web_server.delete("/api/account", async (req, res) => {
+    try {
+        if (!req.headers.authorization || !req.headers.authorization.startsWith("User")) return res.status(401).json({success: false, error: "Missing or invalid authorization type"});
+        let user = await authorizeUser(req.headers.authorization);
+        if (!user) return res.status(401).json({success: false, error: "Invalid authorization header"});
+
+        if (!req.body.verify_password) return res.status(400).json({success: false, error: "Must verify your password"});
+        if (!await encrypt.compare(req.body.verify_password, user.password)) return res.status(403).json({success: false, error: "Invalid password"});
+        await db_users.findByIdAndDelete(user._id);
+        return res.status(200).json({
+            success: true,
+            data: formatUserResponse(user)
+        });
+    } catch(e) {
+        console.log(e);
+        return res.status(500).json({
+            success: false,
+            error: e.toString()
+        });
+    };
+});
+web_server.delete("/api/account/sessions", async (req, res) => {
+    try {
+        if (!req.headers.authorization || !req.headers.authorization.startsWith("User")) return res.status(401).json({success: false, error: "Missing or invalid authorization type"});
+        let user = await authorizeUser(req.headers.authorization);
+        if (!user) return res.status(401).json({success: false, error: "Invalid authorization header"});
+
+        if (!req.body.verify_password) return res.status(400).json({success: false, error: "Must verify your password"});
+        if (!await encrypt.compare(req.body.verify_password, user.password)) return res.status(403).json({success: false, error: "Invalid password"});
+        const result = await db_users.findByIdAndUpdate(user._id, {
+            $pull: {
+                tokens: {
+                    $elemMatch: {
+                        _id: {
+                            $ne: user.current_session_id
+                        }
+                    }
+                }
+            }
+        }, { new: true });
         return res.status(200).json({
             success: true,
             data: formatUserResponse(result)
@@ -421,6 +473,7 @@ web_server.put("/api/domains/:domain", bruteforce_register.prevent, async (req, 
         const captchaCheck = consumeCaptcha(req.body.captcha_token);
         if (!captchaCheck) return res.status(400).send({success: false, error: "Invalid captcha"});
         if (!req.body.target) return res.status(400).json({success: false, error: "You must provide a target location for the domain"});
+        if (!req.headers.authorization) return res.status(401).json({success: false, error: "Missing authorization header"});
         const user = await authorizeUser(req.headers.authorization);
         if (!user) return res.status(401).json({success: false, error: "Invalid authorization header"});
         if (user.suspended) return res.status(401).json({success: false, error: "You are suspended"});
