@@ -110,6 +110,7 @@ document.addEventListener("DOMContentLoaded", async() => {
                     } else {
                         error.innerText = `Request failed (${request.status})`;
                     };
+                    if (request.status !== 200) turnstile.reset();
                 };
             } catch (e) {
                 console.error(e);

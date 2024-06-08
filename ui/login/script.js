@@ -55,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     error.innerText = `Request failed (${request.status})`;
                 };
+                turnstile.reset();
             };
         } catch (e) {
             console.error(e);
