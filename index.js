@@ -366,6 +366,7 @@ web_server.delete("/api/account", async (req, res) => {
 
         if (!req.body.verify_password) return res.status(400).json({success: false, error: "Must verify your password"});
         if (!await encrypt.compare(req.body.verify_password, user.password)) return res.status(403).json({success: false, error: "Invalid password"});
+        if (user.owned_domains.length > 0) return res.status(409).json({success: false, error: "You must first unregister all your domains"});
         await db_users.findByIdAndDelete(user._id);
         return res.status(200).json({
             success: true,
@@ -385,8 +386,6 @@ web_server.delete("/api/account/sessions", async (req, res) => {
         let user = await authorizeUser(req.headers.authorization);
         if (!user) return res.status(401).json({success: false, error: "Invalid authorization header"});
 
-        if (!req.body.verify_password) return res.status(400).json({success: false, error: "Must verify your password"});
-        if (!await encrypt.compare(req.body.verify_password, user.password)) return res.status(403).json({success: false, error: "Invalid password"});
         const result = await db_users.findByIdAndUpdate(user._id, {
             $pull: {
                 tokens: {
@@ -398,6 +397,32 @@ web_server.delete("/api/account/sessions", async (req, res) => {
                 }
             }
         }, { new: true });
+        return res.status(200).json({
+            success: true,
+            data: formatUserResponse(result)
+        });
+    } catch(e) {
+        console.log(e);
+        return res.status(500).json({
+            success: false,
+            error: e.toString()
+        });
+    };
+});
+web_server.post("/api/account/verify-email", async (req, res) => {
+    try {
+        if (!req.headers.authorization || !req.headers.authorization.startsWith("User")) return res.status(401).json({success: false, error: "Missing or invalid authorization type"});
+        let user = await authorizeUser(req.headers.authorization);
+        if (!user) return res.status(401).json({success: false, error: "Invalid authorization header"});
+        if (!req.body.code) return res.status(401).json({success: false, errror: "Missing verification code"});
+        if (!user.email_verification) return res.status(401).json({success: false, error: "Email as already verified"});
+        if (user.email_verification.code !== req.body.code) return res.status(403).json({success: false, error: "Invalid verification code"});
+        let result = await db_users.findByIdAndUpdate(user._id, {
+            email: user.email_verification.update_address,
+            email_verified: true,
+            email_verification: {}
+        }, { new: true });
+
         return res.status(200).json({
             success: true,
             data: formatUserResponse(result)
