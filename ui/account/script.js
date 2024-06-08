@@ -26,9 +26,8 @@ document.addEventListener("DOMContentLoaded", async() => {
         };
         const result = await request.json();
 
-        document.querySelector("#accountUsername").innerText = result.data.username;
-        document.querySelector("#accountEmail").innerText = result.data.email ?? "No email set";
-        if (user.owned_domains?.length > 0) document.querySelector("#deleteAccountButton").remove();
+        displayAccount(result.data);
+        if (result.data.owned_domains?.length > 0) document.querySelector("#deleteAccountButton").remove();
 
         document.querySelector("#accountLoader").remove();
 
@@ -87,7 +86,11 @@ document.addEventListener("DOMContentLoaded", async() => {
                 };
                 if (!invalid) {
                     const result = await updateAccount({email, verify_password}, error);
-                    if (result) document.querySelector("#updateEmailModal").close();
+                    if (result) {
+                        document.querySelector("#updateEmailModal").close();
+                        document.querySelector("#verifyEmailModal").showModal();
+
+                    };
                 };
             } catch (e) {
                 console.error(e);
@@ -140,6 +143,23 @@ document.addEventListener("DOMContentLoaded", async() => {
     };
 });
 
+function displayAccount(user) {
+    document.querySelector("#accountUsername").innerText = user.username;
+    if (user.email_verification?.update_address) {
+        document.querySelector("#accountEmail").innerText = user.email_verification.update_address;
+        if (user.email) {
+            document.querySelector("#accountEmailPending").style.display = "block";
+            document.querySelector("#accountEmailPendingPrevious").innerText = user.email;
+        } else {
+            document.querySelector("#accountEmailPending").style.display = "none";
+        };
+        document.querySelector("#accountEmailVerify").style.display = "block";
+        document.querySelector("#accountEmailChange").style.display = "none";
+    } else {
+        document.querySelector("#accountEmail").innerText = user.email ?? "No email set";
+        if (!user.email) document.querySelector("#accountEmailChange").innerText = "Add";
+    };
+};
 
 async function updateAccount(fields, error) {
     const body = {...fields};
@@ -159,7 +179,7 @@ async function updateAccount(fields, error) {
         const result = await request.json();
         if (result.error === "Must verify your password") {
             error.innerText = "Incorrect password";
-            fields.password.classList.add("input-error");
+            fields.verify_password.classList.add("input-error");
         } else {
             error.innerText = result.error;
         };
@@ -167,7 +187,7 @@ async function updateAccount(fields, error) {
         document.location = "/login";
     } else if (request.status === 403) {
         error.innerText = "Incorrect password";
-        fields.password.classList.add("input-error");
+        fields.verify_password.classList.add("input-error");
     } else if (request.status === 409) {
         const result = await request.json();
         if (result.error === "Username already exists") {
@@ -183,8 +203,7 @@ async function updateAccount(fields, error) {
         error.innerText = "Changes saved";
         error.style.color = "var(--wxp-clr-success-400)";
         const result = await request.json();
-        document.querySelector("#accountUsername").innerText = result.data.username;
-        document.querySelector("#accountEmail").innerText = result.data.email ?? "No email set";
+        displayAccount(result.data);
         return true;
     } else {
         error.innerText = `Request failed (${request.status})`;

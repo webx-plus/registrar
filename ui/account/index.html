@@ -86,9 +86,15 @@
                     <div class="card-label | label">Email</div>
                     <div class="card-value">
                         <p class="card-value-text" id="accountEmail"></p>
+                        <p class="input-note" id="accountEmailPending" style="display: none">
+                            We will continue to send emails to your previous address,
+                            <span id="accountEmailPendingPrevious"></span>
+                            until you verify your new address.
+                        </p>
                     </div>
                     <div class="card-action">
-                        <button class="button" data-modal-open="updateEmailModal">Change</button>
+                        <button class="button" data-modal-open="verifyEmailModal" id="accountEmailVerify" style="display: none">Verify</button>
+                        <button class="button" data-modal-open="updateEmailModal" id="accountEmailChange">Change</button>
                     </div>
                 </div>
                 <div class="card-row">
@@ -142,12 +148,12 @@
                 <form id="updateUsernameForm">
                     <div class="form-group">
                         <label for="updateUsernameInput" class="label">Username</label>
-                        <input type="text" id="updateUsernameInput" class="input" pattern="[a-z0-9-_]+" data-username-input autocomplete="username">
+                        <input type="text" id="updateUsernameInput" class="input" pattern="[a-z0-9-_]+" data-username-input autocomplete="username" required>
                         <p class="input-note">Alphanumeric and hyphens & underscores only, case insensitive</p>
                     </div>
                     <div class="form-group">
                         <label for="updateUsernamePassword" class="label">Password</label>
-                        <input type="password" id="updateUsernamePassword" class="input" autocomplete="off">
+                        <input type="password" id="updateUsernamePassword" class="input" autocomplete="current-password" required>
                     </div>
                     <br />
                     <div class="flex v-center gap-200">
@@ -171,11 +177,11 @@
                 <form id="updateEmailForm">
                     <div class="form-group">
                         <label for="updateEmailInput" class="label">Email</label>
-                        <input type="email" id="updateEmailInput" class="input" autocomplete="email">
+                        <input type="email" id="updateEmailInput" class="input" autocomplete="email" required>
                     </div>
                     <div class="form-group">
-                        <label for="updateUsernamePassword" class="label">Password</label>
-                        <input type="password" id="updateUsernamePassword" class="input" autocomplete="off">
+                        <label for="updateEmailPassword" class="label">Password</label>
+                        <input type="password" id="updateEmailPassword" class="input" autocomplete="current-password" required>
                     </div>
                     <br />
                     <div class="flex v-center gap-200">
@@ -199,11 +205,11 @@
                 <form id="verifyEmailForm">
                     <div class="form-group">
                         <label for="verifyEmailInput" class="label">Verfication Code</label>
-                        <input type="text" id="verifyEmailInput" class="input" pattern="[0-9]{6}" autocomplete="one-time-code">
+                        <input type="text" id="verifyEmailInput" class="input" pattern="[0-9]{6}" autocomplete="one-time-code" required>
                     </div>
                     <br />
                     <div class="flex v-center gap-200">
-                        <button type="submit" class="button">Save Changes</button>
+                        <button type="submit" class="button">Verify</button>
                         <p class="form-result" id="verifyEmailError"></p>
                     </div>
                 </form>
@@ -223,15 +229,15 @@
                 <form id="updatePasswordForm">
                     <div class="form-group">
                         <label for="updatePasswordInput" class="label">New Password</label>
-                        <input type="password" id="updatePasswordInput" class="input" autocomplete="new-password">
+                        <input type="password" id="updatePasswordInput" class="input" autocomplete="new-password" required>
                     </div>
                     <div class="form-group">
                         <label for="updatePasswordConfirm" class="label">Confirm Password</label>
-                        <input type="password" id="updatePasswordConfirm" class="input" autocomplete="new-password">
+                        <input type="password" id="updatePasswordConfirm" class="input" autocomplete="new-password" required>
                     </div>
                     <div class="form-group">
                         <label for="updatePasswordPassword" class="label">Current Password</label>
-                        <input type="password" id="updatePasswordPassword" class="input" autocomplete="current-password">
+                        <input type="password" id="updatePasswordPassword" class="input" autocomplete="current-password" required>
                     </div>
                     <br />
                     <div class="flex v-center gap-200">
@@ -256,11 +262,11 @@
                 <form id="deleteAccountForm">
                     <div class="form-group">
                         <label for="deleteAccountUsername" class="label">Username</label>
-                        <input type="text" id="deleteAccountUsername" class="input" pattern="[a-z0-9-_]+" data-username-input>
+                        <input type="text" id="deleteAccountUsername" class="input" pattern="[a-z0-9-_]+" data-username-input required>
                     </div>
                     <div class="form-group">
                         <label for="deleteAccountPassword" class="label">Password</label>
-                        <input type="password" id="deleteAccountPassword" class="input">
+                        <input type="password" id="deleteAccountPassword" class="input" required>
                     </div>
                     <br />
                     <div class="flex v-center gap-200">

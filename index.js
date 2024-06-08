@@ -66,6 +66,7 @@ async function createVerificationEmail(user) {
         email_verification: {
             token: `${btoa(user._id)}.${generateSecret()}${generateSecret()}`,
             code: generateCode(),
+            update_address: user.email_verification.update_address,
         }
     }, { new: true });
     const smtpEmail = new brevo.SendSmtpEmail();
