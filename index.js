@@ -242,7 +242,7 @@ web_server.post("/api/login", async (req, res) => {
         const captchaCheck = consumeCaptcha(req.body?.captcha_token);
         if (!captchaCheck) return res.status(400).send({success: false, error: "Invalid captcha"});
         if (!req.body.username || !req.body.password) return res.status(400).json({success: false, error: "Missing username or password"});
-        let user = await db_users.findOne({username: req.body.username.toLowerCase()});
+        let user = await db_users.findOne(req.body.username.includes("@") ? {email: req.body.username, email_verified: true} : {username: req.body.username.toLowerCase()});
         if (!user || user.suspended) return res.status(404).json({success: false, error: "User not found"});
         if (!await encrypt.compare(req.body.password, user.password)) return res.status(401).json({success: false, error: "Invalid password"});
         const created_session_id = crypto.randomUUID();
