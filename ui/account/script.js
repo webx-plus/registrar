@@ -28,6 +28,8 @@ document.addEventListener("DOMContentLoaded", async() => {
 
         document.querySelector("#accountUsername").innerText = result.data.username;
         document.querySelector("#accountEmail").innerText = result.data.email ?? "No email set";
+        if (user.owned_domains?.length > 0) document.querySelector("#deleteAccountButton").remove();
+
         document.querySelector("#accountLoader").remove();
 
         const usernameForm = document.querySelector("#updateUsernameForm");
