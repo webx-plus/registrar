@@ -647,7 +647,7 @@ async function loadTlds() {
         }
     });
     if (request_tlds.status != 200) console.log("Error loading TLDs");
-    const tlds = request_tlds.status == 200 ? (await request_tlds.json()).data : {};
+    const tlds = request_tlds.status == 200 ? (await request_tlds.json()).data?.can_register : {};
     const labels = {
         real: "Real",
         webx: "WebX",
