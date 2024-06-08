@@ -23,9 +23,6 @@ const schema = new Schema({
     created_at: {type: Date, default: Date.now},
     suspended: {type: Boolean, default: false},
     network_admin: {type: Boolean, default: false},
-    registrar: {type: Boolean, default: false},
-    api_access: {type: Boolean, default: false},
-    api_key: {type: String, default: null},
     reserved_tlds: {type: [String], default: []},
 });
 module.exports = model("users", schema);
