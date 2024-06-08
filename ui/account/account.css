@@ -1,0 +1,74 @@
+.card {
+    background: var(--wxp-clr-dark-700);
+    border-radius: 10px;
+    margin-block: 20px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: 1px solid var(--wxp-clr-dark-400);
+    padding: 10px;
+    background: var(--wxp-clr-dark-900);
+}
+
+/* https://codepen.io/vineethtrv/pen/NWxZqMM */
+.card-loader {
+    background: linear-gradient(0deg, var(--wxp-clr-primary-800) 33%, var(--wxp-clr-primary-200) 100%);
+    border-radius: 50%;
+    position: relative;
+    display: block;
+    width: 36px;
+    aspect-ratio: 1 / 1;
+    animation: rotation 1s linear infinite;
+}
+.card-loader::after {
+    content: "";
+    background: var(--wxp-clr-dark-900);
+    border-radius: 50%;
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    display: block;
+    width: 32px;
+    aspect-ratio: 1 / 1;
+}
+@keyframes rotation {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.card-body {
+    padding-inline: 10px;
+}
+
+.card-row {
+    display: grid;
+    grid-template-columns: 150px 1fr auto;
+    gap: 3rem;
+    border-bottom: 1px solid var(--wxp-clr-dark-400);
+    padding: 10px;
+    min-height: 69px;
+}
+.card-row:last-child {
+    border-bottom: none;
+}
+.card-row > * {
+    align-self: center;
+}
+
+.card-value-text {
+    color: var(--wxp-clr-text-600);
+}
+.card-value-boolean {
+  font-weight: 800;
+}
+.card-value-boolean[data-value="true"] {
+    color: var(--wxp-clr-success-600);
+}
+.card-value-boolean[data-value="false"] {
+    color: var(--wxp-clr-danger-600);
+}
