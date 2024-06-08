@@ -24,5 +24,6 @@ const schema = new Schema({
     suspended: {type: Boolean, default: false},
     network_admin: {type: Boolean, default: false},
     reserved_tlds: {type: [String], default: []},
+    owned_domains: {type: [String], default: []},
 });
 module.exports = model("users", schema);

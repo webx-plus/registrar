@@ -443,6 +443,13 @@ web_server.put("/api/domains/:domain", bruteforce_register.prevent, async (req, 
             searchable: req.body.searchable,
             note: req.body.note ?? "",
         });
+        if (request.status === 200) {
+            await db_users.findByIdAndUpdate(request.data.owned_by.user, {
+                $addToSet: {
+                    owned_domains: `${request.data.name}.${request.data.tld}`
+                }
+            });
+        };
         return res.status(request.status).json({
             success: true,
             data: request.data
@@ -481,6 +488,13 @@ web_server.delete("/api/domains/:domain", bruteforce_write.prevent, async (req, 
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
         const request = await sendDNSRequest(`/domains/${req.params.domain}`, "DELETE", options);
+        if (request.status === 200) {
+            await db_users.findByIdAndUpdate(request.data.owned_by.user, {
+                $pull: {
+                    owned_domains: `${request.data.name}.${request.data.tld}`
+                }
+            });
+        };
         return res.status(request.status).json({
             success: true,
             data: request.data
