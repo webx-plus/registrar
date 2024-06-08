@@ -98,7 +98,7 @@ async function sendDNSRequest(url, method, options, data) {
             "Authorization": options.domain_key ? `DomainKey ${options.domain_key}` : `Registrar ${process.env.WEBXDNS_API_KEY}`,
             "X-Requesting-User": options.user_id ?? undefined,
         },
-        body: data,
+        body: method === "GET" ? undefined : data,
     });
     try {
         return { status: request.status, data: (await request.json()).data };
