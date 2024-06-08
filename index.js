@@ -96,14 +96,16 @@ async function sendDNSRequest(url, method, options, data) {
         method: method,
         headers: {
             "Content-Type": "application/json",
-            "Authorization": options.domain_key ? `DomainKey ${options.domain_key}` : `Registrar ${process.env.WEBXDNS_API_KEY}`,
+            "Authorization": options.domain_key ? `DomainKey ${options.domain_key}` : `Registrar ${process.env.DNS_API_KEY}`,
             "X-Requesting-User": options.user_id ?? undefined,
         },
         body: method === "GET" ? undefined : data,
     });
     try {
-        return { status: request.status, data: (await request.json()).data };
-    } catch (e) {
+        const body = await request.json();
+        return { status: request.status, data: body.data ?? body.error };
+        } catch (e) {
+        console.log(request);
         return { status: request.status, data: await request.text() };
     };
 };
@@ -439,18 +441,12 @@ web_server.post("/api/account/verify-email", async (req, res) => {
 web_server.get("/api/tlds", async (req, res) => {
     try {
         let user = req.headers.authorization ? await authorizeUser(req.headers.authorization) : null;
-        const users = await db_users.find({reserved_tlds: {$exists: true}});
-        const can_register = user && user.network_admin ? [...RESERVED_TLDS, ...users.map(x => x.reserved_tlds).flat()] : user ? user.reserved_tlds : [];
-        return res.status(200).json({
+        const request = await sendDNSRequest("tlds", "GET", await getDNSOptions(req.headers.authorization));
+        let tlds = request.data;
+        if (tlds?.can_register?.reserved) tlds.can_register.reserved = tlds.can_register.reserved.filter(x => user && user.reserved_tlds.includes(x));
+        return res.status(request.status).json({
             success: true,
-            data: {
-                reserved: [...RESERVED_TLDS, ...users.map(x => x.reserved_tlds).flat()],
-                real: REAL_TLDS,
-                // webx: WEBX_TLDS,
-                custom: CUSTOM_TLDS,
-                all: TLDS,
-                can_register
-            }
+            data: tlds
         });
     } catch(e) {
         console.log(e);
@@ -464,7 +460,7 @@ web_server.get("/api/tlds", async (req, res) => {
 web_server.get("/api/domains", async (req, res) => {
     try {
         const params = new URLSearchParams(req.query);
-        const request = await sendDNSRequest(`/domains/?${params.toString()}`, "GET", await getDNSOptions(req.headers.authorization));
+        const request = await sendDNSRequest(`domains/?${params.toString()}`, "GET", await getDNSOptions(req.headers.authorization));
         return res.status(request.status).json({
             success: true,
             data: request.data
@@ -480,7 +476,7 @@ web_server.get("/api/domains", async (req, res) => {
 //GET A DOMAIN
 web_server.get("/api/domains/:domain", async (req, res) => {
     try {
-        const request = await sendDNSRequest(`/domains/${req.params.domain}`, "GET", await getDNSOptions(req.headers.authorization, true));
+        const request = await sendDNSRequest(`domains/${req.params.domain}`, "GET", await getDNSOptions(req.headers.authorization, true));
         return res.status(request.status).json({
             success: true,
             data: request.data
@@ -517,7 +513,7 @@ web_server.put("/api/domains/:domain", bruteforce_register.prevent, async (req, 
             if (tldCheck.find(x => x.reserved_tlds.includes(tld))) return res.status(400).json({success: false, error: "This TLD is reserved for a different user"});
         };
 
-        const request = await sendDNSRequest(`/domains/${req.params.domain}`, "PUT", {user_id: user._id}, {
+        const request = await sendDNSRequest(`domains/${req.params.domain}`, "PUT", {user_id: user._id}, {
             target: req.body.target,
             searchable: req.body.searchable,
             note: req.body.note ?? "",
@@ -547,7 +543,7 @@ web_server.patch("/api/domains/:domain", bruteforce_write.prevent, async (req, r
         if (!req.headers.authorization) return res.status(401).json({success: false, error: "Missing authorization header"});
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
-        const request = await sendDNSRequest(`/domains/${req.params.domain}`, "PATCH", options, req.body);
+        const request = await sendDNSRequest(`domains/${req.params.domain}`, "PATCH", options, req.body);
         return res.status(request.status).json({
             success: true,
             data: request.data
@@ -566,7 +562,7 @@ web_server.delete("/api/domains/:domain", bruteforce_write.prevent, async (req, 
         if (!req.headers.authorization) return res.status(401).json({success: false, error: "Missing authorization header"});
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
-        const request = await sendDNSRequest(`/domains/${req.params.domain}`, "DELETE", options);
+        const request = await sendDNSRequest(`domains/${req.params.domain}`, "DELETE", options);
         if (request.status === 200) {
             await db_users.findByIdAndUpdate(request.data.owned_by.user, {
                 $pull: {
@@ -596,7 +592,7 @@ web_server.put("/api/domains/:domain/records/:record", bruteforce_write.prevent,
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
 
-        const request = await sendDNSRequest(`/domains/${req.params.domain}/records/${req.params.record}`, "PUT", options, {
+        const request = await sendDNSRequest(`domains/${req.params.domain}/records/${req.params.record}`, "PUT", options, {
             target: req.body.target,
             searchable: req.body.searchable,
         });
@@ -618,7 +614,7 @@ web_server.patch("/api/domains/:domain/records/:record", bruteforce_write.preven
         if (!req.headers.authorization) return res.status(401).json({success: false, error: "Missing authorization header"});
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
-        const request = await sendDNSRequest(`/domains/${req.params.domain}/records/${req.params.record}`, "PATCH", options, req.body);
+        const request = await sendDNSRequest(`domains/${req.params.domain}/records/${req.params.record}`, "PATCH", options, req.body);
         return res.status(request.status).json({
             success: true,
             data: request.data
@@ -637,7 +633,7 @@ web_server.delete("/api/domains/:domain/records/:record", bruteforce_write.preve
         if (!req.headers.authorization) return res.status(401).json({success: false, error: "Missing authorization header"});
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
-        const request = await sendDNSRequest(`/domains/${req.params.domain}/records/${req.params.record}`, "DELETE", options);
+        const request = await sendDNSRequest(`domains/${req.params.domain}/records/${req.params.record}`, "DELETE", options);
         return res.status(request.status).json({
             success: true,
             data: request.data
