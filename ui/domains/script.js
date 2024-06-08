@@ -651,10 +651,11 @@ async function loadTlds() {
     const labels = {
         real: "Real",
         webx: "WebX",
-        custom: "WebX+",
+        webx_plus: "WebX+",
         reserved: "Reserved",
     }
+    console.log(tlds);
     document.querySelector("#domainRegisterTld").innerHTML = Object.keys(tlds).filter(x => x !== "all" && x !== "can_register").map(x => `<optgroup label="${labels[x]}">
-            ${tlds[x === "reserved" ? "can_register" : x].sort((z, y) => z.localeCompare(y)).map(y => `<option value="${y}" ${y == "webx" ? "selected" : ""}>${y}</option>`).join("")}
+            ${tlds[x].sort((z, y) => z.localeCompare(y)).map(y => `<option value="${y}" ${y == "webx" ? "selected" : ""}>${y}</option>`).join("")}
     </optgroup>`).join("");
 };
