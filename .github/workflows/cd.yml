@@ -26,6 +26,6 @@ jobs:
         port: 22
         script: |
           cd /home/lifn/webx/registrar
-          git pull origin main
+          git pull --ff
           git status
           dckr li-webx-registrar
