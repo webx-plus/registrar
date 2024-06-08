@@ -1,0 +1,20 @@
+{
+  "name": "webx-plus-registrar",
+  "type": "commonjs",
+  "version": "1.0.0",
+  "description": "Official registrar for WebX+ DNS ",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --env-file .env index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@getbrevo/brevo": "^2.1.1",
+    "bcrypt": "^5.1.1",
+    "express": "^4.19.2",
+    "express-brute": "^1.0.1",
+    "express-brute-mongoose": "^1.1.0",
+    "mongoose": "^8.4.1",
+    "path": "^0.12.7"
+  }
+}
