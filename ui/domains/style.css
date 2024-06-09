@@ -14,6 +14,11 @@
     padding: 10px;
     margin-bottom: 10px;
 }
+.domain-created-close {
+    display: grid;
+    place-items: center;
+    font-size: 30px;
+}
 .domain-created b {
     color: var(--wxp-clr-text-200);
 }

@@ -99,7 +99,7 @@ async function sendDNSRequest(url, method, options, data) {
             "Authorization": options.domain_key ? `DomainKey ${options.domain_key}` : `Registrar ${process.env.DNS_API_KEY}`,
             "X-Requesting-User": options.user_id ?? undefined,
         },
-        body: method === "GET" ? undefined : data,
+        body: method === "GET" ? undefined : JSON.stringify(data),
     });
     const result = await request.json().catch(e => {console.error(e); return {status: 500, data: e}});
     return {status: request.status, data: result.data, error: result.error ?? null};

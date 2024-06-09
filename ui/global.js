@@ -21,10 +21,10 @@ function loadListeners() {
         });
     };
 
-    const inputs = document.querySelectorAll(".input");
+    const inputs = document.querySelectorAll("input");
     for (let x of inputs) {
         x.addEventListener("input", e => {
-            if (x.validity.valid) x.classList.remove("input-error");
+            if (x.validity.valid && x.closest(".input-error")) x.closest(".input-error").classList.remove("input-error");
         });
     };
 
