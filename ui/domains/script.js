@@ -203,16 +203,21 @@ document.addEventListener("DOMContentLoaded", async() => {
         document.querySelector("#domainPageCount").innerText = result.data.length;
         
         if (sessionStorage.getItem("domain_selected_reload")) {
-            const sorted = sortDomains(result.data);
+            const sorted = generatePage(result.data);
             const index = sorted.findIndex(x => x._id === sessionStorage.getItem("domain_selected_reload"));
-            const page = Math.floor(index / domains_per_page);
-            current_page = page;
-            renderPage(result.data);
-
-            const domain = document.querySelector(`[data-domain-id="${sessionStorage.getItem("domain_selected_reload")}"]`);
-            if (!domain) return;
-            domain.setAttribute("aria-expanded", true);
-            sessionStorage.removeItem("domain_selected_reload");
+            if (index > -1) {
+                console.log(index);
+                const page = Math.floor(index / domains_per_page);
+                console.log(page);
+                current_page = page;
+                renderPage(result.data);
+    
+                const domain = document.querySelector(`[data-domain-id="${sessionStorage.getItem("domain_selected_reload")}"]`);
+                if (domain) domain.setAttribute("aria-expanded", true);
+                sessionStorage.removeItem("domain_selected_reload");
+            } else {
+                renderPage(result.data);
+            };
         } else {
             renderPage(result.data);
         };
