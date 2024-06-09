@@ -13,8 +13,8 @@ const schema = new Schema({
     email: {type: String, required: false},
     email_verified: {type: Boolean, default: false},
     email_verification: {
-        token: {type: String, required: true},
-        code: {type: String, required: true},
+        token: {type: String, required: false},
+        code: {type: String, required: false},
         update_address: {type: String, required: false},
     },
     username: {type: String, required: true},
