@@ -203,12 +203,13 @@ document.addEventListener("DOMContentLoaded", async() => {
         document.querySelector("#domainPageCount").innerText = result.data.length;
         
         if (sessionStorage.getItem("domain_selected_reload")) {
+            console.log(`a ${current_page}`);
             const sorted = generatePage(result.data);
             const index = sorted.findIndex(x => x._id === sessionStorage.getItem("domain_selected_reload"));
+            console.log(`b ${index}`);
             if (index > -1) {
-                console.log(index);
                 const page = Math.floor(index / domains_per_page);
-                console.log(page);
+                console.log(`c ${page}`);
                 current_page = page;
                 renderPage(result.data);
     
@@ -216,6 +217,7 @@ document.addEventListener("DOMContentLoaded", async() => {
                 if (domain) domain.setAttribute("aria-expanded", true);
                 sessionStorage.removeItem("domain_selected_reload");
             } else {
+                console.log(`d ${current_page}`);
                 renderPage(result.data);
             };
         } else {
