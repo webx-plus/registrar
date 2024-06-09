@@ -108,13 +108,14 @@ document.addEventListener("DOMContentLoaded", async() => {
                         sessionStorage.setItem("domain_create_name", `${data.data.name}.${data.data.tld}`);
                         location.reload();
                     } else {
-                        error.innerText = `Request failed (${request.status})`;
+                        const message = await request.json().catch(() => ({error: "Request failed"}));
+                        error.innerText = `Failed to register domain (${request.status})\n${message.error ?? ""}`;
                     };
                     if (request.status !== 200) turnstile.reset();
                 };
             } catch (e) {
                 console.error(e);
-                error.innerText = e.message;
+                error.innerText = `Failed to register domain\n${e.message}`;
             };
             button.dataset.actionState = "save";
         });
@@ -171,11 +172,14 @@ document.addEventListener("DOMContentLoaded", async() => {
                         error.style.color = "var(--wxp-clr-success-400)";
                         sessionStorage.setItem("domain_selected_reload", record_create_domain);
                         location.reload();
-                    }
+                    } else {
+                        const message = await request.json().catch(() => ({error: "Request failed"}));
+                        error.innerText = `Failed to add subdomain (${request.status})\n${message.error ?? ""}`;
+                    };
                 };
             } catch (e) {
                 console.error(e);
-                error.innerText = e.message;
+                error.innerText = `Failed to add subdomain\n${e.message}`;
             };
             button.dataset.actionState = "save";
         });

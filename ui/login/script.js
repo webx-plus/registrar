@@ -53,13 +53,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     document.cookie = `wxp_token=${data.data.generated_session.token}; path=/; expires=${new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toUTCString()}; sameSite=lax;`;
                     return document.location = "/domains";
                 } else {
-                    error.innerText = `Request failed (${request.status})`;
-                };
+                    const message = await request.json().catch(() => ({error: "Request failed"}));
+                    error.innerText = `Failed to login (${request.status})\n${message.error ?? ""}`;
+                }; 
                 turnstile.reset();
             };
         } catch (e) {
             console.error(e);
-            error.innerText = e.message;
+            error.innerText = `Failed to login\n${e.message}`;
         };
         button.dataset.actionState = "save";
     });

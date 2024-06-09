@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", async() => {
                 };
             } catch (e) {
                 console.error(e);
-                error.innerText = e.message;
+                error.innerText = `Failed to update username\n${e.message}`;
             };
             button.dataset.actionState = "save";
         });
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async() => {
                 };
             } catch (e) {
                 console.error(e);
-                error.innerText = e.message;
+                error.innerText = `Failed to update email\n${e.message}`;
             };
             button.dataset.actionState = "save";
         });
@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", async() => {
                 };
             } catch (e) {
                 console.error(e);
-                error.innerText = e.message;
+                error.innerText = `Failed to update password\n${e.message}`;
             };
             button.dataset.actionState = "save";
         });
@@ -178,12 +178,13 @@ document.addEventListener("DOMContentLoaded", async() => {
                         displayAccount(result.data);
                         document.querySelector("#verifyEmailModal").close();
                     } else {
-                        error.innerText = `Request failed (${request.status})`;
+                        const message = await request.json().catch(() => ({error: "Request failed"}));
+                        error.innerText = `Failed to verify email (${request.status})\n${message.error ?? ""}`;
                     };
                 };
             } catch (e) {
                 console.error(e);
-                error.innerText = e.message;
+                error.innerText = `Failed to verify email\n${e.message}`;
             };
             button.dataset.actionState = "save";
         });
@@ -233,11 +234,12 @@ document.addEventListener("DOMContentLoaded", async() => {
                     document.cookie = `auth=; path=/; expires=${new Date()}`;
                     document.location = "/";
                 } else {
-                    error.innerText = `Request failed (${request.status})`;
+                    const message = await request.json().catch(() => ({error: "Request failed"}));
+                    error.innerText = `Failed to delete account (${request.status})\n${message.error ?? ""}`;
                 };
             } catch (e) {
                 console.error(e);
-                error.innerText = e.message;
+                error.innerText = `Failed to delete account\n${e.message}`;
             };
             button.dataset.actionState = "save";
         });
@@ -259,8 +261,8 @@ document.addEventListener("DOMContentLoaded", async() => {
                 } else if (request.status === 200) {
                     alert("Sessions cleared");
                 } else {
-                    console.error(request);
-                    alert(`Failed to clear sessions\nRequest failed (${request.status})`);
+                    const message = await request.json().catch(() => ({error: "Request failed"}));
+                    alert(`Failed to clear sessions (${request.status})\n${message.error ?? ""}`);
                 };
             } catch (e) {
                 console.error(e);
@@ -270,7 +272,6 @@ document.addEventListener("DOMContentLoaded", async() => {
         });
     } catch (e) {
         console.error(e);
-        error.innerText = e.message;
     };
 });
 
@@ -337,7 +338,8 @@ async function updateAccount(fields, error) {
         displayAccount(result.data);
         return true;
     } else {
-        error.innerText = `Request failed (${request.status})`;
+        const message = await request.json().catch(() => ({error: "Request failed"}));
+        error.innerText = `Failed to save changes (${request.status})\n${message.error ?? ""}`;
     };
     return false;
 };
