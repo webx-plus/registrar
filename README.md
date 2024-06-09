@@ -16,6 +16,8 @@ For other browsers, you need to find the option to set a custom DNS and add the 
 - **Primary DNS**: `https://webxdns.votemanager.xyz/resolve`
 - **Secondary DNS**: `https://webxdns.blocklycode.org/resolve`
 
+For those using napture, if you encounter unexpected issues, please try removing the `/resolve` part of the DNS link
+
 Most browsers will only allow you to enter 1 DNS server, in that case just add the primary one. If you are experiencing issues, try adding the secondary DNS instead.
 
 All normal WebX domains are available via the WebX+ DNS
