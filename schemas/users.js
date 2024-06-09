@@ -22,7 +22,6 @@ const schema = new Schema({
     tokens: {type: [tokenSchema], default: []},
     created_at: {type: Date, default: Date.now},
     suspended: {type: Boolean, default: false},
-    network_admin: {type: Boolean, default: false},
     reserved_tlds: {type: [String], default: []},
     owned_domains: {type: [String], default: []},
 });

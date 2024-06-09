@@ -221,7 +221,6 @@ web_server.post("/api/register", bruteforce_register.prevent, async (req, res) =
                 ip: req.headers['cf-connecting-ip'] ?? req.ip
             }],
             created_at: Date.now(),
-            network_admin: false,
             suspended: false,
         }).save();
         if (req.body.email) await createVerificationEmail(result);
