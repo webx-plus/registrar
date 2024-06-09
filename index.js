@@ -101,13 +101,8 @@ async function sendDNSRequest(url, method, options, data) {
         },
         body: method === "GET" ? undefined : data,
     });
-    try {
-        const body = await request.json();
-        return { status: request.status, data: body.data ?? body.error };
-        } catch (e) {
-        console.log(request);
-        return { status: request.status, data: await request.text() };
-    };
+    const result = await request.json().catch(e => {console.error(e); return {status: 500, data: e}});
+    return {status: request.status, data: result.data, error: result.error ?? null};
 };
 
 //----------------------- DATABASE SETUP -----------------------//
@@ -441,9 +436,10 @@ web_server.get("/api/tlds", async (req, res) => {
     try {
         let user = req.headers.authorization ? await authorizeUser(req.headers.authorization) : null;
         const request = await sendDNSRequest("tlds", "GET", await getDNSOptions(req.headers.authorization));
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
         let tlds = request.data;
         if (tlds?.can_register?.reserved) tlds.can_register.reserved = tlds.can_register.reserved.filter(x => user && user.reserved_tlds.includes(x));
-        return res.status(request.status).json({
+        return res.status(200).json({
             success: true,
             data: tlds
         });
@@ -460,7 +456,8 @@ web_server.get("/api/domains", async (req, res) => {
     try {
         const params = new URLSearchParams(req.query);
         const request = await sendDNSRequest(`domains/?${params.toString()}`, "GET", await getDNSOptions(req.headers.authorization));
-        return res.status(request.status).json({
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
+        return res.status(200).json({
             success: true,
             data: request.data
         });
@@ -476,7 +473,8 @@ web_server.get("/api/domains", async (req, res) => {
 web_server.get("/api/domains/:domain", async (req, res) => {
     try {
         const request = await sendDNSRequest(`domains/${req.params.domain}`, "GET", await getDNSOptions(req.headers.authorization, true));
-        return res.status(request.status).json({
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
+        return res.status(200).json({
             success: true,
             data: request.data
         });
@@ -517,14 +515,13 @@ web_server.put("/api/domains/:domain", bruteforce_register.prevent, async (req, 
             searchable: req.body.searchable,
             note: req.body.note ?? "",
         });
-        if (request.status === 200) {
-            await db_users.findByIdAndUpdate(request.data.owned_by.user, {
-                $addToSet: {
-                    owned_domains: `${request.data.name}.${request.data.tld}`
-                }
-            });
-        };
-        return res.status(request.status).json({
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
+        await db_users.findByIdAndUpdate(request.data.owned_by.user, {
+            $addToSet: {
+                owned_domains: `${request.data.name}.${request.data.tld}`
+            }
+        });
+        return res.status(200).json({
             success: true,
             data: request.data
         });
@@ -543,7 +540,8 @@ web_server.patch("/api/domains/:domain", bruteforce_write.prevent, async (req, r
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
         const request = await sendDNSRequest(`domains/${req.params.domain}`, "PATCH", options, req.body);
-        return res.status(request.status).json({
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
+        return res.status(200).json({
             success: true,
             data: request.data
         });
@@ -562,14 +560,13 @@ web_server.delete("/api/domains/:domain", bruteforce_write.prevent, async (req, 
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
         const request = await sendDNSRequest(`domains/${req.params.domain}`, "DELETE", options);
-        if (request.status === 200) {
-            await db_users.findByIdAndUpdate(request.data.owned_by.user, {
-                $pull: {
-                    owned_domains: `${request.data.name}.${request.data.tld}`
-                }
-            });
-        };
-        return res.status(request.status).json({
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
+        await db_users.findByIdAndUpdate(request.data.owned_by.user, {
+            $pull: {
+                owned_domains: `${request.data.name}.${request.data.tld}`
+            }
+        });
+        return res.status(200).json({
             success: true,
             data: request.data
         });
@@ -595,7 +592,8 @@ web_server.put("/api/domains/:domain/records/:record", bruteforce_write.prevent,
             target: req.body.target,
             searchable: req.body.searchable,
         });
-        return res.status(request.status).json({
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
+        return res.status(200).json({
             success: true,
             data: request.data
         });
@@ -614,7 +612,8 @@ web_server.patch("/api/domains/:domain/records/:record", bruteforce_write.preven
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
         const request = await sendDNSRequest(`domains/${req.params.domain}/records/${req.params.record}`, "PATCH", options, req.body);
-        return res.status(request.status).json({
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
+        return res.status(200).json({
             success: true,
             data: request.data
         });
@@ -633,7 +632,8 @@ web_server.delete("/api/domains/:domain/records/:record", bruteforce_write.preve
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
         const request = await sendDNSRequest(`domains/${req.params.domain}/records/${req.params.record}`, "DELETE", options);
-        return res.status(request.status).json({
+        if (request.status !== 200) return res.status(request.status).json({success: false, error: request.error});
+        return res.status(200).json({
             success: true,
             data: request.data
         });
