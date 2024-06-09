@@ -205,7 +205,7 @@ document.addEventListener("DOMContentLoaded", async() => {
         if (sessionStorage.getItem("domain_selected_reload")) {
             const sorted = sortDomains(result.data);
             const index = sorted.findIndex(x => x._id === sessionStorage.getItem("domain_selected_reload"));
-            const page = Math.ceil(index / domains_per_page);
+            const page = Math.floor(index / domains_per_page);
             current_page = page;
             renderPage(result.data);
 
