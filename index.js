@@ -632,8 +632,8 @@ web_server.delete("/api/domains/:domain", bruteforce_write.prevent, async (req, 
 web_server.put("/api/domains/:domain/records/:record", bruteforce_write.prevent, async (req, res) => {
     try {
         if (!req.body.target) return res.status(400).json({success: false, error: "You must provide a target location for the domain"});
-        if (req.params.name.length < DOMAIN_MIN_LENGTH || req.params.name.length > DOMAIN_MAX_LENGTH) return res.status(400).json({success: false, error: `Subdomain length must be between ${DOMAIN_MIN_LENGTH} and ${DOMAIN_MAX_LENGTH}`});
-        if (!RECORD_REGEX.test(req.params.name)) return res.status(400).json({success: false, error: "Subdomain must only contain letters, numbers, and hyphens & dots"});
+        if (req.params.record.length < DOMAIN_MIN_LENGTH || req.params.record.length > DOMAIN_MAX_LENGTH) return res.status(400).json({success: false, error: `Subdomain length must be between ${DOMAIN_MIN_LENGTH} and ${DOMAIN_MAX_LENGTH}`});
+        if (!RECORD_REGEX.test(req.params.record)) return res.status(400).json({success: false, error: "Subdomain must only contain letters, numbers, and hyphens & dots"});
         if (!req.headers.authorization) return res.status(401).json({success: false, error: "Missing authorization header"});
         const options = await getDNSOptions(req.headers.authorization, true);
         if (!options) return res.status(401).json({success: false, error: "Invalid authorization header"});
