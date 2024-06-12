@@ -102,7 +102,7 @@ async function sendDNSRequest(url, method, options, data) {
         body: method === "GET" ? undefined : JSON.stringify(data),
     });
     const result = await request.json().catch(e => {console.error(e); return {status: 500, error: e}});
-    if (request.status === 500) log(`# DNS Request Failed\n${url}\n${method}\n${request.error}`, "error");
+    if (request.status === 500) log(`# DNS Request Failed\n\`${method} ${url}\`\n\`\`\`${result.error ?? result.data}\`\`\``, "error");
     return {status: request.status, data: result.data, error: result.error ?? null};
 };
 
