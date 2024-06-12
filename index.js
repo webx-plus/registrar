@@ -101,8 +101,43 @@ async function sendDNSRequest(url, method, options, data) {
         },
         body: method === "GET" ? undefined : JSON.stringify(data),
     });
-    const result = await request.json().catch(e => {console.error(e); return {status: 500, data: e}});
+    const result = await request.json().catch(e => {console.error(e); return {status: 500, error: e}});
+    if (request.status === 500) log(`# DNS Request Failed\n${url}\n${method}\n${request.error}`, "error");
     return {status: request.status, data: result.data, error: result.error ?? null};
+};
+
+async function log(content, type) {
+    console.log(content);
+    if (!process.env.LOG_WEBHOOK) return;
+
+    const log_formats = {
+        "error": { color: 0xEA2920, name: "DNS Error" },
+        "reload": { color: 0x37FB70, name: "DNS Started" },
+        "other": { color: 0x00B5AE, name: "Other Log Message" },
+    }
+    const webhook_data = log_formats[type] ?? log_formats.other;
+    content = content.toString();
+    const request = await fetch(process.env.LOG_WEBHOOK, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            username: webhook_data.name,
+            avatar_url: `https://resources.votemanager.xyz/assets/logs/${log_formats[type] ? type : "other"}.png`,
+            embeds: [{
+                color: webhook_data.color,
+                description: `${content.length > 2000 ? content.slice(0, 1950) + `\n+${content.length - 1950} more characters` : content}`,
+                author: { name: process.env.VPS_NAME },
+            }]
+        })
+    }).catch(console.log);
+
+    if (!request.ok) {
+        console.log(`SENDING LOG MESSAGE TO DISCORD FAILED: ${request.status} ${request.statusText}`);
+        console.log(`DISCORD REPSONSE BODY:\n${await request.text()}`);
+        console.log(`ORIGINAL LOG MESSAGE:\n${items}`);
+    };
 };
 
 //----------------------- DATABASE SETUP -----------------------//
@@ -110,7 +145,7 @@ const db_users = require("./schemas/users.js");
 const db_ratelimits = mongoose.model("bruteforce", new mongoose.Schema(bruteForceSchema));
 
 if (!mongoose.connection.readyState)
-    mongoose.connect(process.env.MONGODB_URI, {useUnifiedTopology: true});
+    mongoose.connect(process.env.MONGODB_URI, {useUnifiedTopology: true}).then(x => log("Connected to MongoDB", "reload"));
 
 
 //------------------------ RATELIMITING ------------------------//
@@ -136,7 +171,7 @@ const bruteforce_write = new expressBrute(bruteforceStore, {
 const web_server = express();
 
 web_server.listen(process.env.PORT, () => {
-    console.log(`Listening on port ${process.env.PORT}`);
+    log(`Registrar running on port ${process.env.PORT}`, "reload");
 });
 //UI
 web_server.use(express.static(path.join(__dirname, "./ui"), {extensions: ["html"]}));
@@ -186,13 +221,14 @@ web_server.post("/api/captcha", async (req, res) => {
             success: true,
             data: result
         });
-    } catch (e) {
+    } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
         });
-    }
+    };
 });
 //USER LOGIN / REGISTER
 web_server.post("/api/register", bruteforce_register.prevent, async (req, res) => {
@@ -226,13 +262,14 @@ web_server.post("/api/register", bruteforce_register.prevent, async (req, res) =
             success: true,
             data: formatUserResponse(result)
         });
-    } catch (e) {
+    } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
         });
-    }
+    };
 });
 web_server.post("/api/login", async (req, res) => {
     try {
@@ -261,13 +298,14 @@ web_server.post("/api/login", async (req, res) => {
             success: true,
             data: formatUserResponse(result)
         });
-    } catch (e) {
+    } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
         });
-    }
+    };
 });
 web_server.post("/api/logout", async (req, res) => {
     try {
@@ -287,6 +325,7 @@ web_server.post("/api/logout", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -306,6 +345,7 @@ web_server.get("/api/account", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -348,6 +388,7 @@ web_server.patch("/api/account", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -370,6 +411,7 @@ web_server.delete("/api/account", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -399,6 +441,7 @@ web_server.delete("/api/account/sessions", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -425,6 +468,7 @@ web_server.post("/api/account/verify-email", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -445,6 +489,7 @@ web_server.get("/api/tlds", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -463,6 +508,7 @@ web_server.get("/api/domains", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -480,6 +526,7 @@ web_server.get("/api/domains/:domain", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -527,6 +574,7 @@ web_server.put("/api/domains/:domain", bruteforce_register.prevent, async (req, 
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -547,6 +595,7 @@ web_server.patch("/api/domains/:domain", bruteforce_write.prevent, async (req, r
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -572,6 +621,7 @@ web_server.delete("/api/domains/:domain", bruteforce_write.prevent, async (req, 
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -599,6 +649,7 @@ web_server.put("/api/domains/:domain/records/:record", bruteforce_write.prevent,
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -619,6 +670,7 @@ web_server.patch("/api/domains/:domain/records/:record", bruteforce_write.preven
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -639,6 +691,7 @@ web_server.delete("/api/domains/:domain/records/:record", bruteforce_write.preve
         });
     } catch(e) {
         console.log(e);
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n${e.toString()}`, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
