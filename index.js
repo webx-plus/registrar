@@ -223,7 +223,7 @@ web_server.post("/api/captcha", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -264,7 +264,7 @@ web_server.post("/api/register", bruteforce_register.prevent, async (req, res) =
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -300,7 +300,7 @@ web_server.post("/api/login", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -325,7 +325,7 @@ web_server.post("/api/logout", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -345,7 +345,7 @@ web_server.get("/api/account", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -388,7 +388,7 @@ web_server.patch("/api/account", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -411,7 +411,7 @@ web_server.delete("/api/account", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -441,7 +441,7 @@ web_server.delete("/api/account/sessions", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -468,7 +468,7 @@ web_server.post("/api/account/verify-email", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -489,7 +489,7 @@ web_server.get("/api/tlds", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -508,7 +508,7 @@ web_server.get("/api/domains", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -526,7 +526,7 @@ web_server.get("/api/domains/:domain", async (req, res) => {
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -574,7 +574,7 @@ web_server.put("/api/domains/:domain", bruteforce_register.prevent, async (req, 
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -595,7 +595,7 @@ web_server.patch("/api/domains/:domain", bruteforce_write.prevent, async (req, r
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -621,7 +621,7 @@ web_server.delete("/api/domains/:domain", bruteforce_write.prevent, async (req, 
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -649,7 +649,7 @@ web_server.put("/api/domains/:domain/records/:record", bruteforce_write.prevent,
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -670,7 +670,7 @@ web_server.patch("/api/domains/:domain/records/:record", bruteforce_write.preven
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
@@ -691,7 +691,7 @@ web_server.delete("/api/domains/:domain/records/:record", bruteforce_write.preve
         });
     } catch(e) {
         console.log(e);
-        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n**${e.lineNumber}:${e.columnNumber}**\n\`\`\`${e.toString()}\`\`\``, "error");
+        log(`# Failed to handle request\n\`${req.method} ${req.originalUrl}\`\n\`\`\`${e.toString()}\`\`\`\n\`\`\`${e.stack}\`\`\``, "error");
         return res.status(500).json({
             success: false,
             error: e.toString()
