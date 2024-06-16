@@ -71,7 +71,7 @@ body {
 
 
 header {
-    border-bottom: 1px solid var(--wxp-clr-dark-900);
+    border-bottom: 1px solid var(--wxp-clr-dark-400);
     margin-bottom: 50px;
     padding: 15px;
     position: relative;
