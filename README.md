@@ -8,7 +8,7 @@ You also need to provide the environment variables (see .env.example)
 
 We use Clerk for Authentication & User Management, you can find the docs [here](https://clerk.com/docs/overview)
 
-Cloudlfare Turnstile is used to prevent botting on the domain registration API
+Turnstile is used to prevent botting on the domain reigster endpoint, see the docs [here](https://developers.cloudflare.com/turnstile/)
 
 Build: `npm run build`
 
