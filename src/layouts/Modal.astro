@@ -14,7 +14,7 @@ const { id, title } = Astro.props;
     <div>
         <div class="header | flex v-center">
             <h2 class="title">{title}</h2>
-            <button class="close | push-right nostyles pointer" data-modal-close={id}>
+            <button class="close | push-right nostyles pointer" onclick="this.closest('dialog').close();">
                 <i class="bx bx-x"></i>
             </button>
         </div>

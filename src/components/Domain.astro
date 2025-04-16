@@ -1,0 +1,311 @@
+---
+import type * as types from "../../types.ts";
+
+import Record from "./Record.astro";
+
+export type Props = types.Domain & {
+    on_first_page: boolean;
+};
+
+const { _id, name, tld, target, note, searchable, records, created_at, updated_at, on_first_page } = Astro.props;
+
+
+---
+
+<div class="domain-card" data-domain-id={_id} data-domain-name={name + "." + tld} data-domain-created={created_at} data-domain-updated={updated_at} aria-expanded="false" style={!on_first_page ? "display: none" : ""}>
+    <div class="domain-header | flex v-center">
+        <div class="domain-expand">
+            <button class="domain-expand-button | nostyles" data-domain-expand={_id}>
+                <i class="bx bx-chevron-right"></i>
+            </button>
+        </div>
+        <div class="domain-details">
+            <h3 class="h3">{name}<span class="domain-tld">.{tld}</span></h3>
+            <div class="flex v-center gap-050">
+                <p class="domain-note" data-domain-field="note">{note ?? ""}</p>
+                <button class="domain-edit-button | nostyles pointer" data-domain-edit="note" data-action-state="edit">
+                    <i class="bx bx-pencil"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="domain-body">
+        <p class="domain-heading">Target</p>
+        <div class="flex v-center gap-050">
+            <p class="domain-target" data-domain-field="target">{target}</p>
+            <button class="domain-edit-button | nostyles pointer" data-domain-edit="target" data-action-state="edit">
+                <i class="bx bx-pencil"></i>
+            </button>
+        </div>
+        <p class="domain-heading">Searchable</p>
+        <div class="flex v-center gap-100">
+            <label class="toggle">
+                <input type="checkbox" data-domain-field="searchable" id={"domain_" + _id + "_searchable"} checked={searchable}>
+                <span aria-hidden="true"></span>
+            </label>
+            <label for={"domain_" + _id + "_searchable"} class="toggle-label | flex v-center gap-050">
+                <p>Searchable</p>
+                <p class="domain-edit-button" data-action-state="edit" data-domain-status="searchable">
+                    <i class="bx bx-pencil"></i>
+                </p>
+            </label>
+        </div>
+        <p class="input-note">Disable to hide your website from searches and bulk domain listing. Your domain will still be accessible via the the URL</p>
+        <div class="flex v-center gap-100">
+            <p class="domain-heading">Subdomains</p>
+            <button class="domain-create | push-right nostyles pointer" data-domain-action="record_create">
+                <span>Add Subdomain</span>
+            </button>
+        </div>
+        <table>
+            <thead class="sr-only">
+                <tr>
+                    <th>Name</th>
+                    <th>Target</th>
+                    <th>Searchable</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>{records.map(x => <Record {...x} domain_name={name + "." + tld} domain_id={_id} />)}</tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let record_create_domain:string = "";
+
+    const domainExpandButtons = document.querySelectorAll(".domain-expand-button") as NodeListOf<HTMLButtonElement>;
+    for (let x of domainExpandButtons) {
+        x.addEventListener("click", () => {
+            const domain = document.querySelector(`[data-domain-id="${x.dataset.domainExpand}"]`);
+            if (!domain) return;
+            domain.setAttribute("aria-expanded", `${domain.getAttribute("aria-expanded") === "false"}`);
+        });
+    };
+
+    const domainEditButtons = document.querySelectorAll("[data-domain-edit]") as NodeListOf<HTMLButtonElement>;
+    for (let x of domainEditButtons) {
+        x.addEventListener("click", async() => {
+            const domain = x.closest(".domain-card") as HTMLElement;
+            if (!domain) return;
+            const field = domain.querySelector(`[data-domain-field="${x.dataset.domainEdit}"]`) as HTMLInputElement;
+            if (!field) return;
+            if (x.dataset.actionState === "edit") {
+                field.setAttribute("contenteditable", "true");
+                field.focus();
+                x.dataset.actionState = "save";
+                x.innerHTML = "<i class='bx bx-save'></i>";
+            } else if (x.dataset.actionState === "save") {
+                field.setAttribute("contenteditable", "false");
+                x.dataset.actionState = "loading";
+                x.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
+
+                const request = await fetch(`/api/domains/${domain.dataset.domainId}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        [x.dataset.domainEdit!]: field.innerText,
+                    }),
+                });
+                if (request.status === 400) {
+                    field.classList.add("input-error");
+                    field.setAttribute("contenteditable", "true");
+                    x.dataset.actionState = "save";
+                    x.innerHTML = "<i class='bx bx-save'></i>";
+                } else if (request.status === 401) {
+                    document.location = "/login";
+                } else if (request.status === 404) {
+                    location.reload();
+                } else if (request.status === 200) {
+                    x.dataset.actionState = "edit";
+                    x.innerHTML = "<i class='bx bx-pencil'></i>";
+                } else {
+                    console.log(request);
+                    console.log(await request.json());
+                    x.dataset.actionResult = `${request.status}`;
+                    x.dataset.actionState = "error";
+                    x.innerHTML = "<i class='bx bx-error'></i>";
+                };
+            } else if (x.dataset.actionState === "error") {
+                alert(`Action failed with status (${x.dataset.actionResult})\nPlease see the console for more details`);
+            };
+        });
+
+    };
+
+    const domainToggleButtons = document.querySelectorAll(".toggle [data-domain-field]") as NodeListOf<HTMLInputElement>;
+    for (let x of domainToggleButtons) {
+        x.addEventListener("change", async() => {
+            const domain = x.closest(".domain-card") as HTMLElement;
+            if (!domain) return;
+            const status = domain.querySelector(`[data-domain-status="${x.dataset.domainField}"]`) as HTMLParagraphElement;
+            if (status.dataset.actionState === "edit") {
+                status.dataset.actionState = "loading";
+                status.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
+
+                const request = await fetch(`/api/domains/${domain.dataset.domainId}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        [x.dataset.domainField!]: x.checked,
+                    }),
+                });
+                if (request.status === 400) {
+                    x.closest(".toggle")!.classList.add("input-error");
+                    status.dataset.actionState = "edit";
+                    status.innerHTML = "<i class='bx bx-pencil'></i>";
+                } else if (request.status === 401) {
+                    document.location = "/login";
+                } else if (request.status === 404) {
+                    location.reload();
+                } else if (request.status === 200) {
+                    status.dataset.actionState = "saved";
+                    status.innerHTML = "<i class='bx bx-check'></i>";
+                    setTimeout(() => {
+                        status.dataset.actionState = "edit";
+                        status.innerHTML = "<i class='bx bx-pencil'></i>";
+                    }, 10_000);
+                } else {
+                    console.log(request);
+                    console.log(await request.json());
+                    status.dataset.actionResult = `${request.status}`;
+                    status.dataset.actionState = "error";
+                    status.innerHTML = "<i class='bx bx-error'></i>";
+                };
+            };
+        });
+    };
+
+    const domainEditFields = document.querySelectorAll("[data-domain-field]") as NodeListOf<HTMLInputElement>;
+    for (let x of domainEditFields) {
+        x.addEventListener("click", () => {
+            const domain = x.closest(".domain-card");
+            if (!domain) return;
+            const editButton = domain.querySelector(`[data-domain-edit="${x.dataset.domainField}"]`) as HTMLButtonElement;
+            if (!editButton) return;
+            if (editButton.dataset.actionState != "edit") return;
+            editButton.click();
+        });
+        x.addEventListener("keydown", e => {
+            const domain = x.closest(".domain-card");
+            if (!domain) return;
+            const editButton = domain.querySelector(`[data-domain-edit="${x.dataset.domainField}"]`) as HTMLButtonElement;
+            if (!editButton) return;
+            if (editButton.dataset.actionState != "save") return;
+            if (e.key === "Enter" && !e.shiftKey) editButton.click();
+        });
+    };
+
+    const recordCreateButtons = document.querySelectorAll("[data-domain-action='record_create']");
+    for (let x of recordCreateButtons) {
+        x.addEventListener("click", async() => {
+            const domain = x.closest(".domain-card") as HTMLElement;
+            if (!domain) return;
+
+            (document.querySelector("#recordCreateModal") as HTMLDialogElement).dataset.createRecordId = domain.dataset.domainId!;
+
+            (document.querySelector("#recordCreateDomain") as HTMLParagraphElement).innerText = `.${domain.dataset.domainName}`;
+            (document.querySelector("#recordCreateForm") as HTMLFormElement).reset();
+
+            (document.querySelector("#recordCreateModal") as HTMLDialogElement).showModal();
+        });
+    };
+</script>
+
+<style>
+    .domain-card {
+        border-bottom: 1px solid var(--wxp-clr-dark-400);
+        padding: 10px;
+        display: grid;
+        grid-template-rows: auto 0fr;
+        transition: .3s;
+        overflow: hidden;
+    }
+    .domain-card[aria-expanded="true"] {
+        grid-template-rows: auto 1fr;
+    }
+    .domain-card > * {
+        overflow: hidden;
+    }
+
+    .domain-edit-button {
+        display: flex;
+        transition: .3s;
+    }
+    .domain-edit-button[data-action-state="edit"] {
+        color: var(--wxp-clr-text-600);
+    }
+    .domain-edit-button[data-action-state="error"] {
+        color: var(--wxp-clr-danger-400);
+    }
+    .domain-edit-button[data-action-state="saved"] {
+        color: var(--wxp-clr-success-400);
+    }
+
+    p.domain-edit-button[data-action-state="edit"],
+    p.domain-edit-button[data-action-state="save"] {
+        display: none;
+    }
+
+    .domain-card [contenteditable="true"] {
+        border: 1px solid var(--wxp-clr-text-600);
+        border-radius: 5px;
+        padding: 1px 5px;
+        min-width: min(100%, 25ch);
+        font-size: .9em;
+    }
+    .domain-card [contenteditable="true"]:is(:hover, :focus-visible) {
+        outline: 1px solid transparent;
+    }
+
+    .domain-expand-button {
+        margin-left: -10px;
+        display: grid;
+        place-items: center;
+        font-size: 40px;
+        color: var(--wxp-clr-text-600);
+        cursor: pointer;
+    }
+    .domain-expand-button i {
+        transition: .3s;
+    }
+    .domain-card[aria-expanded="true"] .domain-expand-button i {
+        rotate: 90deg;
+    }
+    .domain-details h3 {
+        font-family: var(--wxp-ff-mono);
+    }
+    .domain-tld {
+        color: var(--wxp-clr-text-600);
+        font-size: 0.9em;
+    }
+
+    .domain-note:not([contenteditable="true"]):empty::before {
+        content: "Click to add note";
+        font-style: italic;
+        color: var(--wxp-clr-text-600);
+        cursor: text;
+    }
+    .domain-note:not([contenteditable="true"]):empty + .domain-edit-button:not([data-action-state="error"]) {
+        display: none;
+    }
+    .domain-body {
+        padding-left: 30px;
+    }
+
+    .domain-heading {
+        margin-block: 10px 5px;
+        letter-spacing: .2px;
+        font-weight: 600;
+        font-size: 18px;
+        color: var(--wxp-clr-text-200);
+    }
+
+    .domain-target {
+        font-family: var(--wxp-ff-mono);
+    }
+</style>

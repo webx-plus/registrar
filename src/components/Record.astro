@@ -1,0 +1,162 @@
+---
+import type * as types from "../../types.ts";
+
+export type Props = types.Record & {
+    domain_name: string;
+    domain_id: string;
+};
+
+const { domain_name, domain_id, _id, name, target, searchable } = Astro.props;
+
+
+---
+
+
+<tr data-record-id={_id} data-record-name={name} data-record-full={name + "." + domain_name}></tr>
+    <td>
+        <span class="record-name">{name}</span>
+        <span class="record-domain">.{domain_name}</span>
+    </td>
+    <td>
+        <div class="flex v-center gap-050">
+            <p class="domain-target" data-record-field="target">{target}</p>
+            <button class="domain-edit-button | nostyles pointer" data-record-edit="target" data-action-state="edit">
+                <i class="bx bx-pencil"></i>
+            </button>
+        </div>
+    </td>
+    <td>
+        <div class="flex v-center gap-100">
+            <label class="toggle">
+                <input type="checkbox" data-record-field="searchable" id={"domain_" + domain_id + "_record_" + _id + "_searchable"} checked={searchable}>
+                <span aria-hidden="true"></span>
+            </label>
+            <label for={"domain_" + domain_id + "_record_" + _id + "_searchable"} class="toggle-label | flex v-center gap-050">
+                <p>Searchable</p>
+                <p class="domain-edit-button" data-action-state="edit" data-record-status="searchable">
+                    <i class="bx bx-pencil"></i>
+                </p>
+            </label>
+        </div>
+    </td>
+    <td>
+        <button class="domain-edit-button | nostyles pointer" data-domain-action="record_delete">
+            <i class="bx bx-trash"></i>
+        </button>
+    </td>
+</tr>
+
+<script>
+    const recordEditButtons = document.querySelectorAll("[data-record-edit]") as NodeListOf<HTMLButtonElement>;
+    for (let x of recordEditButtons) {
+        x.addEventListener("click", async() => {
+            const record = x.closest("tr") as HTMLElement;
+            const domain = x.closest(".domain-card") as HTMLElement;
+            if (!record || !domain) return;
+            const field = record.querySelector(`[data-record-field="${x.dataset.recordEdit}"]`) as HTMLInputElement;
+            if (!field) return;
+            if (x.dataset.actionState === "edit") {
+                field.setAttribute("contenteditable", "true");
+                x.dataset.actionState = "save";
+                x.innerHTML = "<i class='bx bx-save'></i>";
+            } else if (x.dataset.actionState === "save") {
+                field.setAttribute("contenteditable", "false");
+                x.dataset.actionState = "loading";
+                x.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
+
+                const request = await fetch(`/api/domains/${domain.dataset.domainId}/records/${record.dataset.recordName}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        [x.dataset.recordEdit!]: field.innerText,
+                    }),
+                });
+                if (request.status === 400) {
+                    field.classList.add("input-error");
+                    field.setAttribute("contenteditable", "true");
+                    x.dataset.actionState = "save";
+                    x.innerHTML = "<i class='bx bx-save'></i>";
+                } else if (request.status === 401) {
+                    document.location = "/login";
+                } else if (request.status === 404) {
+                    location.reload();
+                } else if (request.status === 200) {
+                    x.dataset.actionState = "edit";
+                    x.innerHTML = "<i class='bx bx-pencil'></i>";
+                } else {
+                    console.log(request);
+                    console.log(await request.json());
+                    x.dataset.actionResult = `${request.status}`;
+                    x.dataset.actionState = "error";
+                    x.innerHTML = "<i class='bx bx-error'></i>";
+                };
+            } else if (x.dataset.actionState === "error") {
+                alert(`Action failed with status (${x.dataset.actionResult})\nPlease see the console for more details`);
+            };
+        });
+    };
+
+    const recordDeleteButtons = document.querySelectorAll("[data-domain-action='record_delete']") as NodeListOf<HTMLButtonElement>;
+    for (let x of recordDeleteButtons) {
+        x.addEventListener("click", async() => {
+            const icon = x.querySelector("i") as HTMLElement;
+            if (x.dataset.actionState === "loading") return;
+            if (x.dataset.actionState === "error") {
+                alert(`Action failed with status (${x.dataset.actionResult})\nPlease see the console for more details`);
+                x.dataset.actionState = "delete";
+                icon.classList.remove("bx-error");
+                icon.classList.add("bx-trash");
+                return;
+            };
+            icon.classList.add("bx-loader");
+            icon.classList.add("bx-spin");
+            icon.classList.remove("bx-trash");
+            x.dataset.actionState = "loading";
+            try {
+                const record = x.closest("tr") as HTMLElement;
+                const domain = record.closest(".domain-card") as HTMLElement;
+                if (!domain) return;
+                if (!record) return;
+                if (!confirm(`Are you sure you want to delete the record for ${record.dataset.recordFull}?`)) return;
+                const request = await fetch(`/api/domains/${domain.dataset.domainId}/records/${record.dataset.recordName}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+                if (request.status === 401) {
+                    document.location = "/login";
+                } else if (request.status === 404) {
+                    location.reload();
+                } else if (request.status === 200) {
+                    return record.remove();
+                } else {
+                    console.log(request.status);
+                    icon.classList.add("bx-error");
+                    x.dataset.actionResult = `${request.status}`;
+                    x.dataset.actionState = "error";
+                };
+            } catch (e:any) {
+                console.error(e);
+                icon.classList.add("bx-error");
+                x.dataset.actionResult = `${e.message}`;
+                x.dataset.actionState = "error";
+            };
+            icon.classList.remove("bx-loader");
+            icon.classList.remove("bx-spin");
+            if (x.dataset.actionState === "loading") x.dataset.actionState = "delete";
+        });
+    };
+</script>
+
+<style>
+    .record-name {
+        font-size: 18px;
+        color: var(--wxp-clr-text-100);
+    }
+    .record-domain {
+        color: var(--wxp-clr-text-600);
+    }
+</style>

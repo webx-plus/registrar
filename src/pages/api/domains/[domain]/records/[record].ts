@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { sendDNSRequest, log, } from "../../../../scripts/utils";
+import { sendDNSRequest, log, } from "../../../../../scripts/utils";
 
 const DOMAIN_MAX_LENGTH = 24;
 const DOMAIN_MIN_LENGTH = 3;

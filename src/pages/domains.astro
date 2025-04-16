@@ -1,28 +1,38 @@
 ---
 import type * as types from "../../types.ts";
-import { sendDNSRequest } from "../scripts/utils";
+import { sendDNSRequest } from "../scripts/utils.ts";
 
 import Layout from "../layouts/Primary.astro";
 import Modal from "../layouts/Modal.astro";
 import Dropdown from "../components/Dropdown.astro";
 
-const userId = Astro.locals.auth().userId;
+import Domain from "../components/Domain.astro";
+import PagedController from "../components/PagedController.astro";
+
+const userId = Astro.locals.auth().sessionClaims.userId;
 if (!userId) Astro.redirect("https://accounts.webxplus.org/login");
 
-type APIResponse = {
+type TLDResponse = {
     status: number;
     data: {
         valid_tlds: types.TLD;
         can_register: types.TLD;
     }
 }
+type DomainResponse = {
+    status: number;
+    data: types.Domain[];
+}
 
-const request = await sendDNSRequest("tlds", "GET", userId) as APIResponse;
-if (request.status != 200) console.log("Error loading TLDs");
-let tlds = request.status == 200 ? request.data.can_register : {} as types.TLD;
+const domain_request = await sendDNSRequest("domains?owned=true", "GET", userId) as DomainResponse;
+if (domain_request.status != 200) console.log("Error loading Domains");
+const domains = domain_request.status == 200 ? domain_request.data : [];
+
+const tld_request = await sendDNSRequest("tlds", "GET", userId) as TLDResponse;
+if (tld_request.status != 200) console.log("Error loading TLDs");
+let tlds = tld_request.status == 200 ? tld_request.data.can_register : {} as types.TLD;
 const user = await Astro.locals.currentUser();
-console.log(user);
-if (tlds.reserved) tlds.reserved = tlds.reserved.filter(x => user?.private_metadata && user.private_metadata.reserved_tlds?.includes(x));
+if (tlds.reserved) tlds.reserved = tlds.reserved.filter(x => user?.privateMetadata && user.privateMetadata.reserved_tlds?.includes(x));
 const labels = {
     real: "Real",
     webx: "WebX",
@@ -30,10 +40,21 @@ const labels = {
     reserved: "Reserved",
 } as {[T in keyof types.TLD]: string};
 
+const sort_method = Astro.cookies.get("domain_sort")?.value ?? "name";
+
+//sort according to the method
+const sorted_domains = domains.sort((a, b) => {
+    if (sort_method === "name") return b.name.toLowerCase().localeCompare(a.name.toLowerCase());
+    /* @ts-ignore */
+    if (sort_method === "created") return parseInt(b.created_at) - parseInt(a.created_at);
+    /* @ts-ignore */
+    if (sort_method === "updated") return parseInt(b.updated_at) - parseInt(a.updated_at);
+    return 0;
+});
 
 ---
 
-<Layout title="Home">
+<Layout title="My Domains">
     <div class="flex v-center" id="domainContainer">
         <h2 class="h2">My Domains</h2>
         <button class="domain-create | push-right nostyles pointer" onclick="openModal('domainRegisterModal')">Register a new domain</button>
@@ -43,38 +64,24 @@ const labels = {
         <div class="push-right">
             <Dropdown id="domainSort" label="Sort">
                 <label class="dropdown-item">
-                    <input type="radio" name="domainSort" id="domainSortName" value="name" />
+                    <input type="radio" name="domainSort" id="domainSortName" value="name" checked={sort_method === "name"} />
                     <label for="domainSortName">Name</label>
                 </label>
                 <label class="dropdown-item">
-                    <input type="radio" name="domainSort" id="domainSortTld" value="tld" />
-                    <label for="domainSortTld">TLD</label>
-                </label>
-                <label class="dropdown-item">
-                    <input type="radio" name="domainSort" id="domainSortCreated" value="created" />
+                    <input type="radio" name="domainSort" id="domainSortCreated" value="created" checked={sort_method === "created"} />
                     <label for="domainSortCreated">Registered</label>
                 </label>
                 <label class="dropdown-item">
-                    <input type="radio" name="domainSort" id="domainSortUpdated" value="updated" />
+                    <input type="radio" name="domainSort" id="domainSortUpdated" value="updated" checked={sort_method === "updated"} />
                     <label for="domainSortUpdated">Last Updated</label>
                 </label>
             </Dropdown>
         </div>
     </div>
     <div id="domainList">
-        <div class="domain-loader"></div>
+        {sorted_domains.map((x, i) => <Domain {...x} on_first_page={i < 2} />)}
     </div>
-    <div class="domain-pages | flex v-center">
-        <p>Showing <span id="domainPageStart">1</span> to <span id="domainPageEnd">10</span> of <span id="domainPageCount">0</span> domains</p>
-        <div class="domain-page-controls | push-right flex v-center">
-            <button class="domain-page-control | nostyles pointer" data-page="previous">
-                <i class="bx bx-chevron-left"></i>
-            </button>
-            <button class="domain-page-control | nostyles pointer" data-page="next">
-                <i class="bx bx-chevron-right"></i>
-            </button>
-        </div>
-    </div>
+    <PagedController rows_per_page={2} total_rows={domains.length} />
 </Layout>
 
 <Modal id="domainRegisterModal" title="Register a new domain">
@@ -117,7 +124,7 @@ const labels = {
             <p class="input-note">Disable to hide your website from searches and bulk domain listing. Your domain will still be accessible via the the URL</p>
         </div>
 
-        <div class="cf-turnstile"></div>
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAAAbvf74ep4tJrq3W"></div>
 
         <div class="flex v-center gap-200">
             <button type="submit" class="button">Register Domain</button>
@@ -193,8 +200,7 @@ const labels = {
     };
 
     const container = document.querySelector("#domainList") as HTMLDivElement;
-    const domains_per_page = 10;
-    let current_page = 0, record_create_domain:string = "", domains:types.Domain[];
+    let domains = document.querySelectorAll("[data-domain-id]") as NodeListOf<HTMLDivElement>;
 
     const registerButton = document.querySelector(".domain-create") as HTMLButtonElement;
     registerButton.addEventListener("click", async() => {
@@ -315,6 +321,7 @@ const labels = {
         const error = recordCreateForm.querySelector(".form-result") as HTMLParagraphElement;
         error.innerText = "";
         try {
+            let record_create_domain:string = (document.querySelector("#recordCreateModal") as HTMLDialogElement).dataset.createRecordId!
             const name = document.querySelector("#recordCreateName") as HTMLInputElement;
             const target = document.querySelector("#recordCreateTarget") as HTMLInputElement;
             let invalid = false;
@@ -369,462 +376,254 @@ const labels = {
         button.dataset.actionState = "save";
     });
 
-    const domainSearch = document.querySelector("#domainSearch") as HTMLInputElement;
-    domainSearch.addEventListener("input", () => renderPage());
+    document.querySelector("#domainSearch")?.addEventListener("input", filterDomains);
+    (document.querySelectorAll("[name='domainSort']") as NodeListOf<HTMLInputElement>).forEach(x => x.addEventListener("change", () => {
+        sortDomains(x.value);
+    }));
 
-    const domainSortInputs = document.querySelectorAll("[name='domainSort']");
-    for (let x of domainSortInputs) x.addEventListener("change", () => renderPage());
-
-    const domainPageControls = document.querySelector(".domain-page-controls") as HTMLDivElement;
-    domainPageControls.addEventListener("click", e => {
-        const pageButton = e.target as HTMLButtonElement;
-        if (pageButton.closest(".domain-page-control")) {
-            const page = pageButton.closest(".domain-page-control")!.getAttribute("data-page")!;
-            if (page === "next") current_page = Math.min(current_page + 1, Math.ceil(domains.length / domains_per_page) - 1);
-            else if (page === "previous") current_page = Math.max(current_page - 1, 0);
-            else current_page = parseInt(page);
-
-            renderPage();
-        };
-    });
-
-    try {
-        const request = await fetch("/api/domains/?owned=true", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        });
-        if (request.status == 401) document.location = "/login";
-        if (request.status != 200) {
-            container.innerHTML = `<p class="domain-error | text-center">Error loading domains (${request.status})</p>`;
-        } else {
-            const result = await request.json() as {data: types.Domain[]};
-            domains = result.data;
-    
-            (document.querySelector("#domainPageCount") as HTMLParagraphElement).innerText = result.data.length.toString();
-            
-            if (sessionStorage.getItem("domain_selected_reload")) {
-                const sorted = generatePage();
-                const index = sorted.findIndex(x => x._id === sessionStorage.getItem("domain_selected_reload"));
-                if (index > -1) {
-                    const page = Math.floor(index / domains_per_page);
-                    current_page = page;
-                    renderPage();
-    
-                    const domain = document.querySelector(`[data-domain-id="${sessionStorage.getItem("domain_selected_reload")}"]`);
-                    if (domain) domain.setAttribute("aria-expanded", "true");
-                    sessionStorage.removeItem("domain_selected_reload");
-                } else {
-                    renderPage();
+    function sortDomains(order: string) {
+        console.log("Sorting");
+        let switchMade = true;
+        while (switchMade) {
+            switchMade = false;
+            domains = document.querySelectorAll("[data-domain-id]") as NodeListOf<HTMLDivElement>;
+            for (let i = 0; i < (domains.length - 1); i++) {
+                console.log("a");
+                const a = domains[i], b = domains[i + 1];
+                if (
+                    (order === "name" && b.dataset.domainName!.toLowerCase() < a.dataset.domainName!.toLowerCase()) ||
+                    /* @ts-ignore */
+                    (order === "created" && new Date(b.dataset.domainCreated!).getTime() > new Date(a.dataset.domainCreated!).getTime()) ||
+                    /* @ts-ignore */
+                    (order === "updated" && new Date(b.dataset.domainUpated!).getTime() > new Date(a.dataset.domainUpated!).getTime())
+                ) {
+                    container.insertBefore(b, a);
+                    console.log("Swap made");
+                    switchMade = true;
+                    break;
                 };
-            } else {
-                renderPage();
             };
         };
-    } catch (e:any) {
-        console.error(e);
-        container.innerHTML = `<p class="domain-error | text-center">Error loading domains<br>${e.message}</p>`;
+        document.cookie = `domain_sort=${order}; path=/; expires=${new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toUTCString()};`;
+        const event = new CustomEvent("render_page");
+        document.querySelector(".paged-controller")?.dispatchEvent(event);
     };
-
-    function mapDomain(x:types.Domain, i:number) {
-        return `<div class="domain-card" data-domain-id="${x._id}" data-domain-name="${x.name}.${x.tld}" aria-expanded="false" ${i >= domains_per_page ? `style="display: none"` : ""}>
-            <div class="domain-header | flex v-center">
-                <div class="domain-expand">
-                    <button class="domain-expand-button | nostyles" data-domain-expand="${x._id}">
-                        <i class="bx bx-chevron-right"></i>
-                    </button>
-                </div>
-                <div class="domain-details">
-                    <h3 class="h3">${x.name}<span class="domain-tld">.${x.tld}</span></h3>
-                    <div class="flex v-center gap-050">
-                        <p class="domain-note" data-domain-field="note">${x.note ?? ""}</p>
-                        <button class="domain-edit-button | nostyles pointer" data-domain-edit="note" data-action-state="edit">
-                            <i class="bx bx-pencil"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="domain-body">
-                <p class="domain-heading">Target</p>
-                <div class="flex v-center gap-050">
-                    <p class="domain-target" data-domain-field="target">${x.target}</p>
-                    <button class="domain-edit-button | nostyles pointer" data-domain-edit="target" data-action-state="edit">
-                        <i class="bx bx-pencil"></i>
-                    </button>
-                </div>
-                <p class="domain-heading">Searchable</p>
-                <div class="flex v-center gap-100">
-                    <label class="toggle">
-                        <input type="checkbox" data-domain-field="searchable" id="domain_${x._id}_searchable" ${x.searchable ? "checked" : ""}>
-                        <span aria-hidden="true"></span>
-                    </label>
-                    <label for="domain_${x._id}_searchable" class="toggle-label | flex v-center gap-050">
-                        <p>Searchable</p>
-                        <p class="domain-edit-button" data-action-state="edit" data-domain-status="searchable">
-                            <i class="bx bx-pencil"></i>
-                        </p>
-                    </label>
-                </div>
-                <p class="input-note">Disable to hide your website from searches and bulk domain listing. Your domain will still be accessible via the the URL</p>
-                <div class="flex v-center gap-100">
-                    <p class="domain-heading">Subdomains</p>
-                    <button class="domain-create | push-right nostyles pointer" data-domain-action="record_create">
-                        <span>Add Subdomain</span>
-                    </button>
-                </div>
-                <table>
-                    <thead class="sr-only">
-                        <tr>
-                            <th>Name</th>
-                            <th>Target</th>
-                            <th>Searchable</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>${x.records.map(y => `<tr data-record-id="${y._id}" data-record-name="${y.name}" data-record-full="${y.name}.${x.name}.${x.tld}">
-                            <td>
-                            <span class="record-name">${y.name}</span>
-                            <span class="record-domain">.${x.name}.${x.tld}</span>
-                        </td>
-                        <td>
-                            <div class="flex v-center gap-050">
-                                <p class="domain-target" data-record-field="target">${y.target}</p>
-                                <button class="domain-edit-button | nostyles pointer" data-record-edit="target" data-action-state="edit">
-                                    <i class="bx bx-pencil"></i>
-                                </button>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="flex v-center gap-100">
-                                <label class="toggle">
-                                    <input type="checkbox" data-record-field="searchable" id="domain_${x._id}_record_${y._id}_searchable" ${y.searchable ? "checked" : ""}>
-                                    <span aria-hidden="true"></span>
-                                </label>
-                                <label for="domain_${x._id}_record_${y._id}_searchable" class="toggle-label | flex v-center gap-050">
-                                    <p>Searchable</p>
-                                    <p class="domain-edit-button" data-action-state="edit" data-record-status="searchable">
-                                        <i class="bx bx-pencil"></i>
-                                    </p>
-                                </label>
-                            </div>
-                        </td>
-                        <td>
-                            <button class="domain-edit-button | nostyles pointer" data-domain-action="record_delete">
-                                <i class="bx bx-trash"></i>
-                            </button>
-                        </td>
-                    </tr>`).join("")}</tbody>
-                </table>
-            </div>
-        </div>`;
-    };
-
-    function sortDomains(domains2?: types.Domain[]) {
-        if (!domains2) domains2 = domains;
-        let sort_by = document.querySelector("[name='domainSort']:checked") as HTMLInputElement;
-        if (!sort_by) {
-            sort_by = document.querySelector("[name='domainSort'][value='name']") as HTMLInputElement;
-            sort_by.checked = true;
-        };
-        if (sort_by.value === "name") {
-            /* @ts-ignore */
-            return domains.sort((a, b) => a.name.localeCompare(b.name));
-        } else if (sort_by.value === "tld") {
-            /* @ts-ignore */
-            return domains.sort((a, b) => a.tld.localeCompare(b.tld));
-        } else if (sort_by.value === "created") {
-            return domains.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        } else if (sort_by.value === "updated") {
-            return domains.sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
-        };
-        return domains;
-    };
-    function searchDomains() {
-        const search = document.querySelector("#domainSearch") as HTMLInputElement;
-        if (!search) return domains;
-        return domains.filter(x => x.name.toLowerCase().includes(search.value.toLowerCase()) || x.tld.toLowerCase().includes(search.value.toLowerCase()));
-    }
-    function generatePage() {
-        const domainSearch = document.querySelector("#domainSearch") as HTMLInputElement;
-        const term = domainSearch.value.toLowerCase();
-        const search_results = domains.filter(x => x.name.toLowerCase().includes(term) || x.tld.toLowerCase().includes(term) || (x.note && x.note.toLowerCase().includes(term)));
-        const sorted = sortDomains(search_results);
-        return sorted;
-    };
-    function renderPage() {
-        const container = document.querySelector("#domainList") as HTMLDivElement;
-        const generatedDomains = generatePage();
-        if (generatedDomains.length === 0) {
-            container.innerHTML = `<p class="domain-error | text-center">No domains found</p>`;
-            return;
-        };
-        container.innerHTML = generatedDomains.slice(current_page * domains_per_page, (current_page + 1) * domains_per_page).map(mapDomain).join("");
-        addDomainListeners();
-        (document.querySelector("#domainPageStart") as HTMLParagraphElement).innerText = `${current_page * domains_per_page + 1}`;
-        (document.querySelector("#domainPageEnd") as HTMLParagraphElement).innerText = `${Math.min(generatedDomains.length, (current_page + 1) * domains_per_page)}`;
-        const pageCount = Math.ceil(generatedDomains.length / domains_per_page);
-        const pageControls = document.querySelector(".domain-page-controls") as HTMLDivElement;
-        Array.from(pageControls.children as HTMLCollectionOf<HTMLParagraphElement>).forEach(x => {
-            if (!isNaN(parseInt(x.dataset.page!))) pageControls.removeChild(x);
+    function filterDomains() {
+        const search_input = document.querySelector("#domainSearch") as HTMLInputElement;
+        const search_term = search_input.value;
+        domains.forEach(x => {
+            let shouldShow = true;
+            const domain_name = x.dataset.domainName!;
+            if (search_term != "" && domain_name.toLowerCase().indexOf(search_term.toLowerCase()) == -1) shouldShow = false;
+            x.style.display = shouldShow ? "" : "none";
+            x.dataset.rowFiltered = shouldShow ? "" : "true";
         });
-        for (let x = 0; x < Math.max(pageCount, 1); x++) {
-            const pageButton = document.createElement("button") as HTMLButtonElement;
-            pageButton.classList.add("domain-page-control");
-            pageButton.classList.add("nostyles");
-            pageButton.classList.add("pointer");
-            pageButton.setAttribute("data-page", `${x}`);
-            if (x === current_page) pageButton.setAttribute("data-page-current", "true");
-            pageButton.innerText = `${x + 1}`;
-            pageControls.insertBefore(pageButton, pageControls.querySelector(".domain-page-control[data-page='next']"));
-        };
+        const event = new CustomEvent("render_page", {
+            detail: {
+                page: 1
+            }
+        });
+        document.querySelector(".paged-controller")?.dispatchEvent(event);
     };
 
-    function addDomainListeners() {
-        const domainExpandButtons = document.querySelectorAll(".domain-expand-button") as NodeListOf<HTMLButtonElement>;
-        for (let x of domainExpandButtons) {
-            x.addEventListener("click", () => {
-                const domain = document.querySelector(`[data-domain-id="${x.dataset.domainExpand}"]`);
-                if (!domain) return;
-                domain.setAttribute("aria-expanded", `${domain.getAttribute("aria-expanded") === "false"}`);
-            });
-        };
+    // const domainSearch = document.querySelector("#domainSearch") as HTMLInputElement;
+    // domainSearch.addEventListener("input", () => renderPage());
 
-        const domainEditButtons = document.querySelectorAll("[data-domain-edit]") as NodeListOf<HTMLButtonElement>;
-        for (let x of domainEditButtons) {
-            x.addEventListener("click", async() => {
-                const domain = x.closest(".domain-card") as HTMLElement;
-                if (!domain) return;
-                const field = domain.querySelector(`[data-domain-field="${x.dataset.domainEdit}"]`) as HTMLInputElement;
-                if (!field) return;
-                if (x.dataset.actionState === "edit") {
-                    field.setAttribute("contenteditable", "true");
-                    field.focus();
-                    x.dataset.actionState = "save";
-                    x.innerHTML = "<i class='bx bx-save'></i>";
-                } else if (x.dataset.actionState === "save") {
-                    field.setAttribute("contenteditable", "false");
-                    x.dataset.actionState = "loading";
-                    x.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
+    // const domainSortInputs = document.querySelectorAll("[name='domainSort']");
+    // for (let x of domainSortInputs) x.addEventListener("change", () => renderPage());
 
-                    const request = await fetch(`/api/domains/${domain.dataset.domainId}`, {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            [x.dataset.domainEdit!]: field.innerText,
-                        }),
-                    });
-                    if (request.status === 400) {
-                        field.classList.add("input-error");
-                        field.setAttribute("contenteditable", "true");
-                        x.dataset.actionState = "save";
-                        x.innerHTML = "<i class='bx bx-save'></i>";
-                    } else if (request.status === 401) {
-                        document.location = "/login";
-                    } else if (request.status === 404) {
-                        location.reload();
-                    } else if (request.status === 200) {
-                        x.dataset.actionState = "edit";
-                        x.innerHTML = "<i class='bx bx-pencil'></i>";
-                    } else {
-                        console.log(request);
-                        console.log(await request.json());
-                        x.dataset.actionResult = `${request.status}`;
-                        x.dataset.actionState = "error";
-                        x.innerHTML = "<i class='bx bx-error'></i>";
-                    };
-                } else if (x.dataset.actionState === "error") {
-                    alert(`Action failed with status (${x.dataset.actionResult})\nPlease see the console for more details`);
-                };
-            });
 
-        };
+    // try {
+    //     const request = await fetch("/api/domains/?owned=true", {
+    //         method: "GET",
+    //         headers: {
+    //             "Content-Type": "application/json",
+    //         }
+    //     });
+    //     if (request.status == 401) document.location = "/login";
+    //     if (request.status != 200) {
+    //         container.innerHTML = `<p class="domain-error | text-center">Error loading domains (${request.status})</p>`;
+    //     } else {
+    //         const result = await request.json() as {data: types.Domain[]};
+    //         domains = result.data;
+    
+    //         (document.querySelector("#domainPageCount") as HTMLParagraphElement).innerText = result.data.length.toString();
+            
+    //         if (sessionStorage.getItem("domain_selected_reload")) {
+    //             const sorted = generatePage();
+    //             const index = sorted.findIndex(x => x._id === sessionStorage.getItem("domain_selected_reload"));
+    //             if (index > -1) {
+    //                 const page = Math.floor(index / domains_per_page);
+    //                 current_page = page;
+    //                 renderPage();
+    
+    //                 const domain = document.querySelector(`[data-domain-id="${sessionStorage.getItem("domain_selected_reload")}"]`);
+    //                 if (domain) domain.setAttribute("aria-expanded", "true");
+    //                 sessionStorage.removeItem("domain_selected_reload");
+    //             } else {
+    //                 renderPage();
+    //             };
+    //         } else {
+    //             renderPage();
+    //         };
+    //     };
+    // } catch (e:any) {
+    //     console.error(e);
+    //     container.innerHTML = `<p class="domain-error | text-center">Error loading domains<br>${e.message}</p>`;
+    // };
 
-        const domainToggleButtons = document.querySelectorAll(".toggle [data-domain-field]") as NodeListOf<HTMLInputElement>;
-        for (let x of domainToggleButtons) {
-            x.addEventListener("change", async() => {
-                const domain = x.closest(".domain-card") as HTMLElement;
-                if (!domain) return;
-                const status = domain.querySelector(`[data-domain-status="${x.dataset.domainField}"]`) as HTMLParagraphElement;
-                if (status.dataset.actionState === "edit") {
-                    status.dataset.actionState = "loading";
-                    status.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
+    // function mapDomain(x:types.Domain, i:number) {
+    //     return `<div class="domain-card" data-domain-id="${x._id}" data-domain-name="${x.name}.${x.tld}" aria-expanded="false" ${i >= domains_per_page ? `style="display: none"` : ""}>
+    //         <div class="domain-header | flex v-center">
+    //             <div class="domain-expand">
+    //                 <button class="domain-expand-button | nostyles" data-domain-expand="${x._id}">
+    //                     <i class="bx bx-chevron-right"></i>
+    //                 </button>
+    //             </div>
+    //             <div class="domain-details">
+    //                 <h3 class="h3">${x.name}<span class="domain-tld">.${x.tld}</span></h3>
+    //                 <div class="flex v-center gap-050">
+    //                     <p class="domain-note" data-domain-field="note">${x.note ?? ""}</p>
+    //                     <button class="domain-edit-button | nostyles pointer" data-domain-edit="note" data-action-state="edit">
+    //                         <i class="bx bx-pencil"></i>
+    //                     </button>
+    //                 </div>
+    //             </div>
+    //         </div>
+    //         <div class="domain-body">
+    //             <p class="domain-heading">Target</p>
+    //             <div class="flex v-center gap-050">
+    //                 <p class="domain-target" data-domain-field="target">${x.target}</p>
+    //                 <button class="domain-edit-button | nostyles pointer" data-domain-edit="target" data-action-state="edit">
+    //                     <i class="bx bx-pencil"></i>
+    //                 </button>
+    //             </div>
+    //             <p class="domain-heading">Searchable</p>
+    //             <div class="flex v-center gap-100">
+    //                 <label class="toggle">
+    //                     <input type="checkbox" data-domain-field="searchable" id="domain_${x._id}_searchable" ${x.searchable ? "checked" : ""}>
+    //                     <span aria-hidden="true"></span>
+    //                 </label>
+    //                 <label for="domain_${x._id}_searchable" class="toggle-label | flex v-center gap-050">
+    //                     <p>Searchable</p>
+    //                     <p class="domain-edit-button" data-action-state="edit" data-domain-status="searchable">
+    //                         <i class="bx bx-pencil"></i>
+    //                     </p>
+    //                 </label>
+    //             </div>
+    //             <p class="input-note">Disable to hide your website from searches and bulk domain listing. Your domain will still be accessible via the the URL</p>
+    //             <div class="flex v-center gap-100">
+    //                 <p class="domain-heading">Subdomains</p>
+    //                 <button class="domain-create | push-right nostyles pointer" data-domain-action="record_create">
+    //                     <span>Add Subdomain</span>
+    //                 </button>
+    //             </div>
+    //             <table>
+    //                 <thead class="sr-only">
+    //                     <tr>
+    //                         <th>Name</th>
+    //                         <th>Target</th>
+    //                         <th>Searchable</th>
+    //                         <th>Actions</th>
+    //                     </tr>
+    //                 </thead>
+    //                 <tbody>${x.records.map(y => `<tr data-record-id="${y._id}" data-record-name="${y.name}" data-record-full="${y.name}.${x.name}.${x.tld}">
+    //                         <td>
+    //                         <span class="record-name">${y.name}</span>
+    //                         <span class="record-domain">.${x.name}.${x.tld}</span>
+    //                     </td>
+    //                     <td>
+    //                         <div class="flex v-center gap-050">
+    //                             <p class="domain-target" data-record-field="target">${y.target}</p>
+    //                             <button class="domain-edit-button | nostyles pointer" data-record-edit="target" data-action-state="edit">
+    //                                 <i class="bx bx-pencil"></i>
+    //                             </button>
+    //                         </div>
+    //                     </td>
+    //                     <td>
+    //                         <div class="flex v-center gap-100">
+    //                             <label class="toggle">
+    //                                 <input type="checkbox" data-record-field="searchable" id="domain_${x._id}_record_${y._id}_searchable" ${y.searchable ? "checked" : ""}>
+    //                                 <span aria-hidden="true"></span>
+    //                             </label>
+    //                             <label for="domain_${x._id}_record_${y._id}_searchable" class="toggle-label | flex v-center gap-050">
+    //                                 <p>Searchable</p>
+    //                                 <p class="domain-edit-button" data-action-state="edit" data-record-status="searchable">
+    //                                     <i class="bx bx-pencil"></i>
+    //                                 </p>
+    //                             </label>
+    //                         </div>
+    //                     </td>
+    //                     <td>
+    //                         <button class="domain-edit-button | nostyles pointer" data-domain-action="record_delete">
+    //                             <i class="bx bx-trash"></i>
+    //                         </button>
+    //                     </td>
+    //                 </tr>`).join("")}</tbody>
+    //             </table>
+    //         </div>
+    //     </div>`;
+    // };
 
-                    const request = await fetch(`/api/domains/${domain.dataset.domainId}`, {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            [x.dataset.domainField!]: x.checked,
-                        }),
-                    });
-                    if (request.status === 400) {
-                        x.closest(".toggle")!.classList.add("input-error");
-                        status.dataset.actionState = "edit";
-                        status.innerHTML = "<i class='bx bx-pencil'></i>";
-                    } else if (request.status === 401) {
-                        document.location = "/login";
-                    } else if (request.status === 404) {
-                        location.reload();
-                    } else if (request.status === 200) {
-                        status.dataset.actionState = "saved";
-                        status.innerHTML = "<i class='bx bx-check'></i>";
-                        setTimeout(() => {
-                            status.dataset.actionState = "edit";
-                            status.innerHTML = "<i class='bx bx-pencil'></i>";
-                        }, 10_000);
-                    } else {
-                        console.log(request);
-                        console.log(await request.json());
-                        status.dataset.actionResult = `${request.status}`;
-                        status.dataset.actionState = "error";
-                        status.innerHTML = "<i class='bx bx-error'></i>";
-                    };
-                };
-            });
-        };
-
-        const domainEditFields = document.querySelectorAll("[data-domain-field]") as NodeListOf<HTMLInputElement>;
-        for (let x of domainEditFields) {
-            x.addEventListener("click", () => {
-                const domain = x.closest(".domain-card");
-                if (!domain) return;
-                const editButton = domain.querySelector(`[data-domain-edit="${x.dataset.domainField}"]`) as HTMLButtonElement;
-                if (!editButton) return;
-                if (editButton.dataset.actionState != "edit") return;
-                editButton.click();
-            });
-            x.addEventListener("keydown", e => {
-                const domain = x.closest(".domain-card");
-                if (!domain) return;
-                const editButton = domain.querySelector(`[data-domain-edit="${x.dataset.domainField}"]`) as HTMLButtonElement;
-                if (!editButton) return;
-                if (editButton.dataset.actionState != "save") return;
-                if (e.key === "Enter" && !e.shiftKey) editButton.click();
-            });
-        };
-
-        const recordEditButtons = document.querySelectorAll("[data-record-edit]") as NodeListOf<HTMLButtonElement>;
-        for (let x of recordEditButtons) {
-            x.addEventListener("click", async() => {
-                const record = x.closest("tr") as HTMLElement;
-                const domain = x.closest(".domain-card") as HTMLElement;
-                if (!record || !domain) return;
-                const field = record.querySelector(`[data-record-field="${x.dataset.recordEdit}"]`) as HTMLInputElement;
-                if (!field) return;
-                if (x.dataset.actionState === "edit") {
-                    field.setAttribute("contenteditable", "true");
-                    x.dataset.actionState = "save";
-                    x.innerHTML = "<i class='bx bx-save'></i>";
-                } else if (x.dataset.actionState === "save") {
-                    field.setAttribute("contenteditable", "false");
-                    x.dataset.actionState = "loading";
-                    x.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
-
-                    const request = await fetch(`/api/domains/${domain.dataset.domainId}/records/${record.dataset.recordName}`, {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            [x.dataset.recordEdit!]: field.innerText,
-                        }),
-                    });
-                    if (request.status === 400) {
-                        field.classList.add("input-error");
-                        field.setAttribute("contenteditable", "true");
-                        x.dataset.actionState = "save";
-                        x.innerHTML = "<i class='bx bx-save'></i>";
-                    } else if (request.status === 401) {
-                        document.location = "/login";
-                    } else if (request.status === 404) {
-                        location.reload();
-                    } else if (request.status === 200) {
-                        x.dataset.actionState = "edit";
-                        x.innerHTML = "<i class='bx bx-pencil'></i>";
-                    } else {
-                        console.log(request);
-                        console.log(await request.json());
-                        x.dataset.actionResult = `${request.status}`;
-                        x.dataset.actionState = "error";
-                        x.innerHTML = "<i class='bx bx-error'></i>";
-                    };
-                } else if (x.dataset.actionState === "error") {
-                    alert(`Action failed with status (${x.dataset.actionResult})\nPlease see the console for more details`);
-                };
-            });
-        };
-
-        const recordDeleteButtons = document.querySelectorAll("[data-domain-action='record_delete']") as NodeListOf<HTMLButtonElement>;
-        for (let x of recordDeleteButtons) {
-            x.addEventListener("click", async() => {
-                const icon = x.querySelector("i") as HTMLElement;
-                if (x.dataset.actionState === "loading") return;
-                if (x.dataset.actionState === "error") {
-                    alert(`Action failed with status (${x.dataset.actionResult})\nPlease see the console for more details`);
-                    x.dataset.actionState = "delete";
-                    icon.classList.remove("bx-error");
-                    icon.classList.add("bx-trash");
-                    return;
-                };
-                icon.classList.add("bx-loader");
-                icon.classList.add("bx-spin");
-                icon.classList.remove("bx-trash");
-                x.dataset.actionState = "loading";
-                try {
-                    const record = x.closest("tr") as HTMLElement;
-                    const domain = record.closest(".domain-card") as HTMLElement;
-                    if (!domain) return;
-                    if (!record) return;
-                    if (!confirm(`Are you sure you want to delete the record for ${record.dataset.recordFull}?`)) return;
-                    const request = await fetch(`/api/domains/${domain.dataset.domainId}/records/${record.dataset.recordName}`, {
-                        method: "DELETE",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                    });
-                    if (request.status === 401) {
-                        document.location = "/login";
-                    } else if (request.status === 404) {
-                        location.reload();
-                    } else if (request.status === 200) {
-                        return record.remove();
-                    } else {
-                        console.log(request.status);
-                        icon.classList.add("bx-error");
-                        x.dataset.actionResult = `${request.status}`;
-                        x.dataset.actionState = "error";
-                    };
-                } catch (e:any) {
-                    console.error(e);
-                    icon.classList.add("bx-error");
-                    x.dataset.actionResult = `${e.message}`;
-                    x.dataset.actionState = "error";
-                };
-                icon.classList.remove("bx-loader");
-                icon.classList.remove("bx-spin");
-                if (x.dataset.actionState === "loading") x.dataset.actionState = "delete";
-            });
-        };
-
-        const recordCreateButtons = document.querySelectorAll("[data-domain-action='record_create']");
-        for (let x of recordCreateButtons) {
-            x.addEventListener("click", async() => {
-                const domain = x.closest(".domain-card") as HTMLElement;
-                if (!domain) return;
-
-                record_create_domain = domain.dataset.domainId!;
-
-                (document.querySelector("#recordCreateDomain") as HTMLParagraphElement).innerText = `.${domain.dataset.domainName}`;
-                (document.querySelector("#recordCreateForm") as HTMLFormElement).reset();
-
-                (document.querySelector("#recordCreateModal") as HTMLDialogElement).showModal();
-            });
-        };
-    }
+    // function sortDomains(domains2?: types.Domain[]) {
+    //     if (!domains2) domains2 = domains;
+    //     let sort_by = document.querySelector("[name='domainSort']:checked") as HTMLInputElement;
+    //     if (!sort_by) {
+    //         sort_by = document.querySelector("[name='domainSort'][value='name']") as HTMLInputElement;
+    //         sort_by.checked = true;
+    //     };
+    //     if (sort_by.value === "name") {
+    //         /* @ts-ignore */
+    //         return domains.sort((a, b) => a.name.localeCompare(b.name));
+    //     } else if (sort_by.value === "tld") {
+    //         /* @ts-ignore */
+    //         return domains.sort((a, b) => a.tld.localeCompare(b.tld));
+    //     } else if (sort_by.value === "created") {
+    //         return domains.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    //     } else if (sort_by.value === "updated") {
+    //         return domains.sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
+    //     };
+    //     return domains;
+    // };
+    // function searchDomains() {
+    //     const search = document.querySelector("#domainSearch") as HTMLInputElement;
+    //     if (!search) return domains;
+    //     return domains.filter(x => x.name.toLowerCase().includes(search.value.toLowerCase()) || x.tld.toLowerCase().includes(search.value.toLowerCase()));
+    // }
+    // function generatePage() {
+    //     const domainSearch = document.querySelector("#domainSearch") as HTMLInputElement;
+    //     const term = domainSearch.value.toLowerCase();
+    //     const search_results = domains.filter(x => x.name.toLowerCase().includes(term) || x.tld.toLowerCase().includes(term) || (x.note && x.note.toLowerCase().includes(term)));
+    //     const sorted = sortDomains(search_results);
+    //     return sorted;
+    // };
+    // function renderPage() {
+    //     const container = document.querySelector("#domainList") as HTMLDivElement;
+    //     const generatedDomains = generatePage();
+    //     if (generatedDomains.length === 0) {
+    //         container.innerHTML = `<p class="domain-error | text-center">No domains found</p>`;
+    //         return;
+    //     };
+    //     container.innerHTML = generatedDomains.slice(current_page * domains_per_page, (current_page + 1) * domains_per_page).map(mapDomain).join("");
+    //     addDomainListeners();
+    //     (document.querySelector("#domainPageStart") as HTMLParagraphElement).innerText = `${current_page * domains_per_page + 1}`;
+    //     (document.querySelector("#domainPageEnd") as HTMLParagraphElement).innerText = `${Math.min(generatedDomains.length, (current_page + 1) * domains_per_page)}`;
+    //     const pageCount = Math.ceil(generatedDomains.length / domains_per_page);
+    //     const pageControls = document.querySelector(".domain-page-controls") as HTMLDivElement;
+    //     Array.from(pageControls.children as HTMLCollectionOf<HTMLParagraphElement>).forEach(x => {
+    //         if (!isNaN(parseInt(x.dataset.page!))) pageControls.removeChild(x);
+    //     });
+    //     for (let x = 0; x < Math.max(pageCount, 1); x++) {
+    //         const pageButton = document.createElement("button") as HTMLButtonElement;
+    //         pageButton.classList.add("domain-page-control");
+    //         pageButton.classList.add("nostyles");
+    //         pageButton.classList.add("pointer");
+    //         pageButton.setAttribute("data-page", `${x}`);
+    //         if (x === current_page) pageButton.setAttribute("data-page-current", "true");
+    //         pageButton.innerText = `${x + 1}`;
+    //         pageControls.insertBefore(pageButton, pageControls.querySelector(".domain-page-control[data-page='next']"));
+    //     };
+    // };
 </script>
 
 <style>
@@ -853,177 +652,8 @@ const labels = {
         color: var(--wxp-clr-text-200);
     }
 
-
-    /* https://codepen.io/vineethtrv/pen/NWxZqMM */
-    .domain-loader {
-        background: var(--wxp-clr-text-100);
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        margin-block: 20px;
-        position: relative;
-        display: inline-block;
-        width: 0;
-        height: 4.8px;
-        animation: domainLoaderForward 6s linear infinite;
-    }
-    .domain-loader::after, .domain-loader::before {
-        content: "";
-        background: var(--wxp-clr-text-100);
-        position: absolute;
-        top: 9px;
-        right: -2px;
-        width: 10px;
-        height: 1px;
-        opacity: 0;
-        transform: rotate(-45deg) translateX(0px);
-        animation: domainLoaderColi1 0.3s linear infinite;
-    }
-    .domain-loader::before {
-        top: -4px;
-        transform: rotate(45deg);
-        animation: domainLoaderColi2 0.3s linear infinite;
-    }
-
-    @keyframes domainLoaderForward {
-        0% { width: 0 }
-        100% { width:100% }
-    }
-    @keyframes domainLoaderColi1 {
-        0% { transform: rotate(-45deg) translateX(0px); opacity: 0.7; }
-        100% { transform: rotate(-45deg) translateX(-45px); opacity: 0; }
-    }
-    @keyframes domainLoaderColi2 {
-        0% { transform: rotate(45deg) translateX(0px); opacity: 1; }
-        100% { transform: rotate(45deg) translateX(-45px); opacity: 0.7 ;}
-    }
-
     #domainSearch {
         max-width: 500px;
     }
 
-    .domain-pages {
-        padding: 10px;
-    }
-    .domain-pages span {
-        font-weight: 600;
-        color: var(--wxp-clr-text-200);
-    }
-    .domain-page-controls {
-        border: 1px solid var(--wxp-clr-dark-400);
-        border-radius: 5px;
-        overflow: hidden;
-    }
-    .domain-page-control:not(:last-child) {
-        border-right: 1px solid var(--wxp-clr-dark-400);
-    }
-    .domain-page-control {
-        display: grid;
-        place-content: center;
-        width: 30px;
-        aspect-ratio: 1 / 1;
-        color: var(--wxp-clr-text-200);
-    }
-    .domain-page-control[data-page-current="true"] {
-        background: var(--wxp-clr-dark-400);
-    }
-
-
-    .domain-card {
-        border-bottom: 1px solid var(--wxp-clr-dark-400);
-        padding: 10px;
-        display: grid;
-        grid-template-rows: auto 0fr;
-        transition: .3s;
-        overflow: hidden;
-    }
-    .domain-card[aria-expanded="true"] {
-        grid-template-rows: auto 1fr;
-    }
-    .domain-card > * {
-        overflow: hidden;
-    }
-
-    .domain-edit-button {
-        display: flex;
-        transition: .3s;
-    }
-    .domain-edit-button[data-action-state="edit"] {
-        color: var(--wxp-clr-text-600);
-    }
-    .domain-edit-button[data-action-state="error"] {
-        color: var(--wxp-clr-danger-400);
-    }
-    .domain-edit-button[data-action-state="saved"] {
-        color: var(--wxp-clr-success-400);
-    }
-
-    p.domain-edit-button[data-action-state="edit"],
-    p.domain-edit-button[data-action-state="save"] {
-        display: none;
-    }
-
-    .domain-card [contenteditable="true"] {
-        border: 1px solid var(--wxp-clr-text-600);
-        border-radius: 5px;
-        padding: 1px 5px;
-        min-width: min(100%, 25ch);
-        font-size: .9em;
-    }
-    .domain-card [contenteditable="true"]:is(:hover, :focus-visible) {
-        outline: 1px solid transparent;
-    }
-
-    .domain-expand-button {
-        margin-left: -10px;
-        display: grid;
-        place-items: center;
-        font-size: 40px;
-        color: var(--wxp-clr-text-600);
-        cursor: pointer;
-    }
-    .domain-expand-button i {
-        transition: .3s;
-    }
-    .domain-card[aria-expanded="true"] .domain-expand-button i {
-        rotate: 90deg;
-    }
-    .domain-details h3 {
-        font-family: var(--wxp-ff-mono);
-    }
-    .domain-tld {
-        color: var(--wxp-clr-text-600);
-        font-size: 0.9em;
-    }
-
-    .domain-note:not([contenteditable="true"]):empty::before {
-        content: "Click to add note";
-        font-style: italic;
-        color: var(--wxp-clr-text-600);
-        cursor: text;
-    }
-    .domain-note:not([contenteditable="true"]):empty + .domain-edit-button:not([data-action-state="error"]) {
-        display: none;
-    }
-    .domain-body {
-        padding-left: 30px;
-    }
-
-    .domain-heading {
-        margin-block: 10px 5px;
-        letter-spacing: .2px;
-        font-weight: 600;
-        font-size: 18px;
-        color: var(--wxp-clr-text-200);
-    }
-
-    .domain-target {
-        font-family: var(--wxp-ff-mono);
-    }
-
-    .record-name {
-        font-size: 18px;
-        color: var(--wxp-clr-text-100);
-    }
-    .record-domain {
-        color: var(--wxp-clr-text-600);
-    }
 </style>

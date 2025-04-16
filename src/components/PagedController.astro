@@ -29,7 +29,7 @@ const pages = Math.ceil(total_rows / rows_per_page);
 <script>
     const rows_per_page = parseInt((document.querySelector(".paged-controller") as HTMLDivElement)?.dataset?.rowsPerPage ?? "50");
     let current_page = 1;
-    let max_pages = Math.ceil(document.querySelectorAll(`.domain:not([data-row-filtered="true"])`).length / rows_per_page);
+    let max_pages = Math.ceil(document.querySelectorAll(`[data-domain-id]:not([data-row-filtered="true"])`).length / rows_per_page);
 
     (document.querySelectorAll(".page-buttons button") as NodeListOf<HTMLButtonElement>).forEach(x => {
         x.addEventListener("click", () => {
@@ -42,30 +42,36 @@ const pages = Math.ceil(total_rows / rows_per_page);
     });
 
     function showPage(page_no:number) {
-        const rows = Array.from(document.querySelectorAll(`.domain:not([data-row-filtered='true'])`)) as HTMLDivElement[];
+        const rows = Array.from(document.querySelectorAll(`[data-domain-id]:not([data-row-filtered='true'])`)) as HTMLDivElement[];
         const pages = [];
         for (let i = 0; i < rows.length; i += rows_per_page) {
             pages.push(rows.slice(i, i+rows_per_page));
         };
+        console.log(pages);
         max_pages = pages.length;
-        pages[current_page - 1].forEach(x => x.style.display = "none");
+        rows.forEach(x => x.style.display = "none");
         current_page = Math.min(page_no, max_pages);
         pages[current_page - 1].forEach(x => x.style.display = "");
-        (document.querySelector(`.paged-controller .result-count`) as HTMLParagraphElement).innerHTML = `Showing ${((page_no - 1) * rows_per_page) + 1} - ${Math.min(page_no * rows_per_page + rows_per_page, rows.length)} of ${rows.length} rows`;
-        (document.querySelector(".page-buttons [data-page='next']") as HTMLButtonElement).disabled = false;
-        (document.querySelector(".page-buttons [data-page='last']") as HTMLButtonElement).disabled = false;
-        (document.querySelector(".page-buttons [data-page='first']") as HTMLButtonElement).disabled = false;
-        (document.querySelector(".page-buttons [data-page='prev']") as HTMLButtonElement).disabled = false;
-        if (current_page >= max_pages) {
-            (document.querySelector(".page-buttons [data-page='next']") as HTMLButtonElement).disabled = true;
-            (document.querySelector(".page-buttons [data-page='last']") as HTMLButtonElement).disabled = true;
-        } else if (current_page <= 1) {
-            (document.querySelector(".page-buttons [data-page='first']") as HTMLButtonElement).disabled = true;
-            (document.querySelector(".page-buttons [data-page='prev']") as HTMLButtonElement).disabled = true;
-        };
-        (document.querySelectorAll(".page-buttons button[data-page-active]") as NodeListOf<HTMLButtonElement>).forEach(x => x.removeAttribute("data-page-active"));
-        (document.querySelector(`.page-buttons [data-page="${current_page}"]`) as HTMLButtonElement).dataset.pageActive = "true";
+        const shown_rows = (current_page - 1) * rows_per_page;
+        (document.querySelector(`.paged-controller .result-count`) as HTMLParagraphElement).innerHTML = `Showing ${shown_rows + 1} - ${Math.min(shown_rows + rows_per_page, rows.length)} of ${rows.length} rows`;
+        (document.querySelector(".page-buttons [data-page='next']") as HTMLButtonElement).disabled = current_page >= max_pages;
+        (document.querySelector(".page-buttons [data-page='last']") as HTMLButtonElement).disabled = current_page >= max_pages;
+        (document.querySelector(".page-buttons [data-page='first']") as HTMLButtonElement).disabled = current_page <= 1;
+        (document.querySelector(".page-buttons [data-page='prev']") as HTMLButtonElement).disabled = current_page <= 1;
+
+        const page_buttons = document.querySelectorAll(".page-buttons button") as NodeListOf<HTMLButtonElement>;
+        page_buttons.forEach(x => {
+            const page = parseInt(x.dataset.page ?? "0");
+            x.style.display = page > max_pages ? "none" : "";
+            x.removeAttribute("data-page-active");
+            if (page === current_page) x.dataset.pageActive = "true";
+        });
     };
+
+    document.querySelector(".paged-controller")?.addEventListener("render_page", e => {
+        /* @ts-ignore */
+        showPage(e.detail?.page ?? current_page);
+    })
 </script>
 
 <style>
@@ -88,7 +94,7 @@ const pages = Math.ceil(total_rows / rows_per_page);
     .page-buttons button:not(:disabled):is(:hover, :focus-visible) {
         background: var(--wxp-clr-dark-800);
     }
-    .page-buttons button:not(:disabled)[data-page-active] {
+    .page-buttons button:not(:disabled)[data-page-active="true"] {
         background: var(--wxp-clr-dark-900);
     }
     .page-buttons button:disabled {

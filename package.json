@@ -17,6 +17,10 @@
     "@types/node": "^22.14.1",
     "astro": "^5.6.1",
     "astro-turnstile": "^2.1.0",
+    "jsonwebtoken": "^9.0.2",
     "plausible-tracker": "^0.3.9"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.9"
   }
 }
