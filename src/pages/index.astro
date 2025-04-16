@@ -5,33 +5,55 @@ import Layout from "../layouts/Primary.astro";
 ---
 
 <Layout title="Home">
-	<p class="h3">Welcome to WebX+ Domains!</p>
+	<p class="h2">Welcome to WebX+!</p>
 	<p>Here you can register and manage your WebX+ domains.</p>
 	<p>WebX+ Domains is the official first party registrar for WebX+ DNS</p>
 	<br>
-	<h2 class="h2">Using WebX+</h2>
+	<h2 class="h3">Using WebX+</h2>
 	<p>To use webX+ you need a WebX browser that supports custom DNS. We recommend <a href="https://github.com/codingMASTER398/bussinga" target="_blank">Bussinga</a>.</p>
-	<p>Open the settings for your browser and find the option to input custom DNS. Then enter one of the following DNS URLs, we provide 2 identical versions of our DNS to improve reliablity</p>
-	<ul>
-		<li data-text="Recommended"><code>https://dns.webxplus.org/resolve</code></li>
-		<li data-text="Primary"><code>https://dns-one.webxplus.org/resolve</code></li>
-		<li data-text="Secondary"><code>https://dns.webxplus.org/resolve</code></li>
-	</ul>
+	<p>Open the settings for your browser and find the option to input custom DNS. We recommend you use the following DNS URL:</p>
+	<p class="dns-url" data-recommended data-url-tag="Recommended">https://dns.webxplus.org/resolve</p>
+	<p>This URL will automatically move over to the secondary DNS server if the primary DNS server is unavailable.</p>
+	<p>If your broswer requires 2 DNS URLs, or you wish to only use a specific server, you can use these URLs instead:</p>
+	<p class="dns-url" data-url-tag="Primary">https://dns-one.webxplus.org/resolve</p>
+	<p class="dns-url" data-url-tag="Secondary">https://dns-two.webxplus.org/resolve</p>
 	<p>Then save your settings. You may need to clear your DNS cache or restart your browser as well</p>
-	<p>You can now access WebX+ domains, such as search.frontdoor, our search engine for both WebX and WebX+ domains</p>
+	<p>You can now access WebX+ domains, such as <a href="buss://search.frontdoor">search.frontdoor</a>, our search engine for both WebX and WebX+ domains</p>
+	<br />
+	<h2 class="h3">Registrars</h2>
+	<p>We provide an offical registrar for WebX+ domains, however we also allow users to build their own registrars.</p>
+	<p>In order to use the DNS API, you will need a Registrar Key, which can be issued by contacting us on Discord.</p>
+	<p>More information can be found <a href="https://dns.webxplus.org" target="_blank">here</a>. You can also checkout the source code for our registrar, written in Astro <a href="https://github.com/webx-plus/registrar" target="_blank">on github</a>.</p>
+	<br />
+	<h2 class="h3">The buss:// protocol</h2>
+	<p>The buss:// protocol is a custom protocol that allows you to access WebX+ domains from your browser.</p>
 </Layout>
 
 <style>
-	li::after {
-		content: attr(data-text);
+	.h2 {
+		margin-top: -35px;
+	}
+	.dns-url {
+		display: block;
+		background: var(--wxp-clr-dark-600);
+		border: 1px solid var(--wxp-clr-dark-300);
+		border-radius: 4px;
+		margin-block: 10px;
+		padding: 5px 10px;
+		font-family: var(--wxp-ff-mono);
+		color: var(--wxp-clr-text-100);
+	}
+	.dns-url::after {
+		content: attr(data-url-tag);
 		background: var(--wxp-clr-success-800);
 		border-radius: 100vh;
 		margin-inline: 10px 0;
 		padding: 2px 7px;
+		font-family: var(--wxp-ff-body);
 		font-size: 14px;
 		color: var(--wxp-clr-text-100);
 	}
-	li:first-child::after {
+	.dns-url[data-recommended]::after {
 		background: var(--wxp-clr-primary-400);
 	}
 </style>
