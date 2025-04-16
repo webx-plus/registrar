@@ -1,48 +1,43 @@
-# Astro Starter Kit: Basics
+# Webx+ Official Registrar
 
-```sh
-npm create astro@latest -- --template basics
-```
+## How to run
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
+Clone the repo, install the deps and build and then run the entry file (`./dist/server/entry.mjs`)
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+You also need to provide the environment variables (see .env.example)
 
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
+We use Clerk for Authentication & User Management, you can find the docs [here](https://clerk.com/docs/overview)
+Cloudlfare Turnstile is used to prevent botting on the domain registration API
 
-## 🚀 Project Structure
+Build: `npm run build`
+Dev Server: `npm run dev`
 
-Inside of your Astro project, you'll see the following folders and files:
+Also dockerfile is provided if u want to use docker. Just build the image and run it
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## Using WebX+
 
-## 🧞 Commands
+To use webX+ you need a WebX browser that supports custom DNS. We recommend [Bussinga](https://github.com/codingMASTER398/bussinga).
 
-All commands are run from the root of the project, from a terminal:
+Open the settings for your browser and find the option to input custom DNS. We recommend you use the following DNS URL:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+https://dns.webxplus.org
 
-## 👀 Want to learn more?
+This URL will automatically move over to the secondary DNS server if the primary DNS server is unavailable.
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+If your broswer requires 2 DNS URLs, or you wish to only use a specific server, you can use these URLs instead:
+
+https://dns-one.webxplus.org
+https://dns-two.webxplus.org
+
+Then save your settings. You may need to clear your DNS cache or restart your browser as well
+
+You can now access WebX+ domains, such as [search.frontdoor](buss://search.frontdoor), our search engine for both WebX and WebX+ domains
+
+## Registrars
+
+We provide an offical registrar for WebX+ domains, however we also allow users to build their own registrars.
+
+In order to use the DNS API, you will need a Registrar Key, which can be issued by contacting us on Discord.
+
+More information can be found [here](https://dns.webxplus.org).
