@@ -13,9 +13,25 @@ import Layout from "../layouts/Primary.astro";
 	<p>To use webX+ you need a WebX browser that supports custom DNS. We recommend <a href="https://github.com/codingMASTER398/bussinga" target="_blank">Bussinga</a>.</p>
 	<p>Open the settings for your browser and find the option to input custom DNS. Then enter one of the following DNS URLs, we provide 2 identical versions of our DNS to improve reliablity</p>
 	<ul>
-		<li><code>https://dns-one.webxplus.org/resolve</code></li>
-		<li><code>https://dns-two.webxplus.org/resolve</code></li>
+		<li data-text="Recommended"><code>https://dns.webxplus.org/resolve</code></li>
+		<li data-text="Primary"><code>https://dns-one.webxplus.org/resolve</code></li>
+		<li data-text="Secondary"><code>https://dns.webxplus.org/resolve</code></li>
 	</ul>
 	<p>Then save your settings. You may need to clear your DNS cache or restart your browser as well</p>
 	<p>You can now access WebX+ domains, such as search.frontdoor, our search engine for both WebX and WebX+ domains</p>
 </Layout>
+
+<style>
+	li::after {
+		content: attr(data-text);
+		background: var(--wxp-clr-success-800);
+		border-radius: 100vh;
+		margin-inline: 10px 0;
+		padding: 2px 7px;
+		font-size: 14px;
+		color: var(--wxp-clr-text-100);
+	}
+	li:first-child::after {
+		background: var(--wxp-clr-primary-400);
+	}
+</style>

@@ -45,6 +45,14 @@ import { SignedOut, SignInButton, UserButton } from "@clerk/astro/components";
         color: var(--wxp-clr-text-100);
     }
 
+    .login-button {
+        color: var(--wxp-clr-primary-400);
+        cursor: pointer;
+    }
+    .login-button:is(:hover, :focus-visible) {
+        color: var(--wxp-clr-primary-200);
+    }
+
     header #navAccount .login-button + #navAccountDropdown {
         display: none;
     }
