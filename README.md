@@ -30,6 +30,7 @@ This URL will automatically move over to the secondary DNS server if the primary
 If your broswer requires 2 DNS URLs, or you wish to only use a specific server, you can use these URLs instead:
 
 https://dns-one.webxplus.org
+
 https://dns-two.webxplus.org
 
 Then save your settings. You may need to clear your DNS cache or restart your browser as well
