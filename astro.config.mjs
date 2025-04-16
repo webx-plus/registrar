@@ -1,5 +1,17 @@
-// @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig } from "astro/config";
 
-// https://astro.build/config
-export default defineConfig({});
+import node from "@astrojs/node";
+
+import clerk from "@clerk/astro";
+import { dark } from "@clerk/themes";
+
+export default defineConfig({
+    site: "https://webxplus.org",
+    integrations: [clerk({
+        appearance: {
+            baseTheme: dark
+        }
+    })],
+    adapter: node({ mode: 'standalone' }),
+    output: 'server',
+})

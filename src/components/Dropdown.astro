@@ -1,0 +1,158 @@
+---
+
+import * as types from "../../types";
+
+export interface Props {
+	id: string;
+	label?: string;
+	three_dots?: "true" | "false";
+}
+
+const { id, label = "", three_dots = "false" } = Astro.props;
+---
+
+<div class="dropdown" id={id + "Drop"}>
+	<button class="dropdown-toggle | flex v-center gap-050 nostyles pointer" id={id + "Button"} data-dropdown="valid-click" data-dropdown-button>
+		{three_dots == "true" ? <i class="bx bx-dots-vertical-rounded"></i> : (<span>{label}</span> <i class="bx bx-chevron-down"></i>)}
+	</button>
+	<div class="dropdown-menu">
+		<slot/>
+	</div>
+</div>
+
+<script is:inline>
+	function dropdownLoadButtons() {
+		for (let x of document.querySelectorAll("[data-dropdown-button]")) {
+			if (x.dataset.dropdownInitilised == "true") continue;
+			x.addEventListener("click", (event) => {
+				if (!event.target.closest("[data-dropdown-button]")) return;
+				let dropdown = event.target.closest(".dropdown");
+				let remove = dropdown.classList.contains("show");
+				for (let x of document.querySelectorAll(".dropdown")) {
+					x.classList.remove("show");
+					x.setAttribute("aria-expanded", "false");
+				}
+				if (!remove) {
+					dropdown.classList.add("show");
+					dropdown.setAttribute("aria-expanded", "true");
+				}
+			});
+			x.dataset.dropdownInitilised = "true";
+		};
+	};
+</script>
+<script>
+	window.addEventListener("click", e => {
+		const target = e.target as HTMLElement;
+		const dropdown = target.closest(".dropdown") as HTMLDivElement;
+		for (let x of Array.from(document.querySelectorAll(".dropdown"))) {
+			if (dropdown && dropdown.id == x.id && (!target.closest(".dropdown-item") || target.closest("[data-dropdown-no-close]")) ) continue;
+			x.classList.remove("show");
+			x.setAttribute("aria-expanded", "false");
+		};
+	});
+	try {
+		/* @ts-ignore */
+		dropdownLoadButtons();
+	} catch(e) {console.log("Failed to load dropdowns")};
+</script>
+<style>
+	.dropdown {
+        position: relative;
+    }
+    .dropdown-toggle {
+        font-size: 18px;
+        color: var(--wxp-clr-text-200);
+    }
+    .dropdown-toggle i:not(:only-child) {
+        font-size: 20px;
+        color: var(--wxp-clr-text-600);
+        transition: .3s;
+    }
+    .dropdown.show i.bx-chevron-down {
+        rotate: 180deg;
+    }
+
+    .dropdown-menu {
+        background: var(--wxp-clr-dark-900);
+        border-radius: 10px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        margin: 0px;
+        padding: 10px;
+        position: absolute;
+        right: 0;
+        z-index: 6;
+        min-width: 160px;
+        transition: .5s;
+        opacity: 0;
+        pointer-events: none;
+        transform: skewX(3deg) translate(10px, 30px);
+    }
+    .dropdown-menu.overflows {
+        bottom: 100%;
+        left: 0;
+    }
+    :global(.dropdown-heading) {
+        margin: 0 5px;
+        display: block;
+        font-family: var(--wxp-ff-heading);
+        font-weight: 400;
+        font-size: 15px;
+        color: var(--wxp-clr-text-200);
+    }
+    :global(.dropdown-item) {
+        background: transparent;
+        border: none;
+        border-radius: 5px;
+        margin: 2px 0;
+        padding: 5px 8px;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        width: 100%;
+        text-decoration: none;
+        text-align: left;
+        font-size: 14px;
+        color: var(--wxp-clr-text-400);
+        transition: .3s;
+        cursor: pointer;
+    }
+    :global(.dropdown-item:is(:hover, :focus-visible)) {
+        background: var(--wxp-clr-dark-400);
+        color: var(--wxp-clr-text-200);
+    }
+    :global(.dropdown-menu hr) {
+        background: var(--wxp-clr-dark-750);
+        border: none;
+        border-radius: 2px;
+        margin-block: 4px;
+        height: 1px;
+    }
+    .dropdown.show .dropdown-menu {
+        opacity: 1;
+        transform: none;
+        pointer-events: all;
+    }
+
+    :global(.dropdown-item input[type="radio"]:checked) {
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='4'/%3e%3c/svg%3e");
+        background-color: var(--wxp-clr-primary-600);
+        background-size: 100% 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+        border-color: var(--wxp-clr-primary-600);
+    }
+    :global(.dropdown-item input[type="radio"]) {
+        appearance: none;
+        border: 1px solid var(--wxp-clr-text-600);
+        border-radius: 100%;
+        margin: 0;
+        display: block;
+        width: 20px;
+        aspect-ratio: 1 / 1;
+        cursor: pointer;
+    }
+    :global(.dropdown-item input[type="radio"] + label) {
+        cursor: pointer;
+    }
+</style>

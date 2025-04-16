@@ -1,0 +1,155 @@
+---
+
+import Header from "./Header.astro";
+import Footer from "./Footer.astro";
+
+export type Props = {
+	title: string;
+}
+
+const { title } = Astro.props;
+
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+		<!-- SEO and that -->
+		<meta name="author" content="WebX+ Domains">
+		<meta name="title" content={title + " - WebX+ Domains"}>
+		<meta name="description" content="Register & manager your WebX+ domains">
+		<meta name="keywords" content="WebX+ Domains">
+		<meta name="robots" content="index, follow">
+		<meta name="language" content="English">
+
+		<!-- Open Graph / Facebook -->
+		<meta property="og:locale" content="en_UK">
+		<meta property="og:type" content="website">
+		<meta property="og:site_name" content="WebX+ Domains">
+		<meta property="og:title" content={title + " - WebX+ Domains"}>
+		<meta property="og:description" content="Register & manager your WebX+ domains">
+		<meta property="og:image" content="/assets/favicon.png">
+
+		<!-- Twitter -->
+		<meta property="twitter:card" content="summary">
+		<meta property="twitter:title" content={title + " - WebX+ Domains"}>
+		<meta property="twitter:description" content="Register & manager your WebX+ domains">
+		<meta property="twitter:image" content="/assets/favicon.png">
+
+		<link rel="shortcut icon" href="/assets/favicon.png">
+		<link rel="stylesheet" href="/global.css">
+
+		<!-- Something something EU consent -->
+		<script type="text/javascript" src="https://app.termly.io/resource-blocker/aa0cd10c-b4ad-4c04-91ce-3155e3efa6c7?autoBlock=on"></script>
+
+		<script>
+			import Plausible from "plausible-tracker";
+
+			const plausible = Plausible({
+				domain: "webxplus.org",
+			});
+		</script>
+
+		<meta name="generator" content={Astro.generator} />
+		<title>{title} - WebX+ Domains</title>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<slot />
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<script>
+	window.addEventListener("click", e => {
+		const target = e.target as HTMLElement;
+		const dropdown = target.closest(".dropdown");
+		for (let x of Array.from(document.querySelectorAll(".dropdown"))) {
+			if (dropdown && dropdown.id == x.id && !target.closest(".dropdown-item")) continue; 
+			x.classList.remove("show");
+			x.setAttribute("aria-expanded", "false");
+		};
+	});
+</script>
+
+<style is:global>
+	@import url("https://unpkg.com/boxicons/css/boxicons.min.css");
+	@import url("https://resources.votemanager.xyz/fonts/faces.css");
+
+	:root {
+		/* Main Colors */
+		--wxp-clr-primary-200: hsl(342, 90%, 71%);
+		--wxp-clr-primary-400: #f54278;
+		--wxp-clr-primary-600: hsl(342, 90%, 49%);
+		--wxp-clr-primary-800: hsl(342, 90%, 49%, .5);
+
+		--wxp-clr-danger-200: hsl(3, 83%, 72%);
+		--wxp-clr-danger-400: hsl(3, 83%, 52%);
+		--wxp-clr-danger-600: hsl(3, 83%, 32%);
+		--wxp-clr-danger-800: hsl(3, 83%, 32%, .5);
+
+		--wxp-clr-warning-200: hsl(31, 87%, 60%);
+		--wxp-clr-warning-400: hsl(31, 87%, 50%);
+		--wxp-clr-warning-600: hsl(31, 87%, 40%);
+		--wxp-clr-warning-800: hsl(31, 87%, 40%, .5);
+
+		--wxp-clr-success-200: hsl(137, 96%, 70%);
+		--wxp-clr-success-400: hsl(137, 96%, 60%);
+		--wxp-clr-success-600: hsl(137, 96%, 50%);
+		--wxp-clr-success-800: hsl(137, 96%, 50%, .5);
+		/* Font Colors */
+		--wxp-clr-text-100: hsl(250, 0%, 100%);
+		--wxp-clr-text-200: hsl(250, 0%, 095%);
+		--wxp-clr-text-300: hsl(250, 0%, 090%);
+		--wxp-clr-text-400: hsl(250, 0%, 080%);
+		--wxp-clr-text-600: hsl(250, 0%, 060%);
+		--wxp-clr-text-800: hsl(250, 0%, 040%);
+		/* Dark Colors */
+		--wxp-clr-dark-100: hsl(250, 0%, 45%);
+		--wxp-clr-dark-200: hsl(250, 0%, 40%);
+		--wxp-clr-dark-300: hsl(250, 0%, 35%);
+		--wxp-clr-dark-400: hsl(250, 0%, 30%);
+		--wxp-clr-dark-500: hsl(250, 0%, 25%);
+		--wxp-clr-dark-600: hsl(250, 0%, 20%);
+		--wxp-clr-dark-700: hsl(250, 0%, 15%);
+		--wxp-clr-dark-750: hsl(250, 0%, 12%);
+		--wxp-clr-dark-800: hsl(250, 0%, 10%);
+		--wxp-clr-dark-900: hsl(250, 0%, 05%);
+
+		/* Font Family */
+		--wxp-ff-body:    "Libre Franklin", Arial, Helvetica, sans-serif;
+		--wxp-ff-heading: "Jua", sans-serif;
+		--wxp-ff-mono:    "Roboto Mono", monospace;
+	}
+
+	*, ::before, ::after {
+		box-sizing: border-box;
+	}
+</style>
+
+<style>
+	html {
+		background-color: var(--wxp-clr-dark-750);
+		height: 100%;
+	}
+	body {
+		margin: 0  auto;
+		padding: min(50px, 2vw);
+		display: flex;
+		flex-direction: column;
+		max-width: 1200px;
+		min-height: 100%;
+		line-height: 1.5;
+		-webkit-font-smoothing: antialiased;
+		font-size: 16px;
+		font-family: var(--wxp-ff-body);
+		color: var(--wxp-clr-text-400);
+		overflow-x: hidden;
+	}
+</style>

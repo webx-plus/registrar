@@ -1,0 +1,43 @@
+---
+
+
+---
+
+<footer class="flex v-center h-center gap-100">
+    <a href="/">
+        <img src="/assets/footer.png" alt="WebX+ Logo" />
+    </a>
+    <p class="footer-text">&copy; 2024 WebX+</p>
+    <div class="footer-links | flex v-center gap-100">
+        <a href="https://discord.gg/b5CYjbfHRK" target="_blank">Discord</a>
+        <a href="https://github.com/webx-plus" target="_blank">GitHub</a>
+        <a href="/legal/privacy">Privacy Policy</a>
+        <a href="/legal/cookies">Cookie Policy</a>
+        <a href="/legal/terms">Terms of Service</a>
+        <a href="#" class="termly-display-preferences">Consent Preferences</a>
+    </div>
+</footer>
+
+<style>
+    footer {
+        border-top: 1px solid var(--wxp-clr-dark-400);
+        margin-top: auto;
+        padding-top: min(50px, 2vw);
+    }
+    img {
+        border-radius: 50%;
+        display: block;
+        height: 30px;
+        aspect-ratio: 1 / 1;
+    }
+    .footer-text {
+        margin-right: 10px;
+        font-size: 15px;
+        color: var(--wxp-clr-text-600);
+    }
+    @media (width < 850px) {
+        .footer-links {
+            flex-wrap: wrap;
+        }
+    }
+</style>

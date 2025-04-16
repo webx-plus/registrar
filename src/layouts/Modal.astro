@@ -1,0 +1,90 @@
+---
+
+export type Props = {
+	id: string;
+    title: string;
+}
+
+const { id, title } = Astro.props;
+
+---
+
+
+<dialog id={id}>
+    <div>
+        <div class="header | flex v-center">
+            <h2 class="title">{title}</h2>
+            <button class="close | push-right nostyles pointer" data-modal-close={id}>
+                <i class="bx bx-x"></i>
+            </button>
+        </div>
+        <div class="body">
+            <slot />
+        </div>
+    </div>
+</dialog>
+
+<script is:inline>
+    function openModal(id) {
+        const modal = document.querySelector(`#${id}`);
+        modal.showModal();
+    };
+    function closeModal(id) {
+        const modal = document.querySelector(`#${id}`);
+        modal.close();
+    }
+</script>
+
+<script>
+    declare global {
+        function openModal(id:string): void;
+        function closeModal(id:string): void;
+    }
+
+    document.addEventListener("click", e => {
+        const target = e.target as HTMLDialogElement;
+        if (target.tagName == "DIALOG") target.close();
+    });
+</script>
+
+<style>
+    dialog {
+        background: var(--wxp-clr-dark-600);
+        border: none;
+        border-radius: 4px;
+        box-shadow: 0 0 1px var(--wxp-clr-dark-900);
+        padding: 0;
+        position: fixed;
+        inset: 50% auto auto 50%;
+        translate: -50% -50%;
+        min-width: 500px;
+        font: inherit;
+        color: inherit;
+        overflow: initial;
+    }
+
+    dialog::backdrop {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(2px);
+    }
+    dialog > div {
+        padding: 10px;
+    }
+    dialog .header {
+        border-bottom: 1px solid var(--wxp-clr-dark-400);
+        padding: 10px;
+    }
+    dialog .title {
+        margin: 0;
+        font-size: 25px;
+        color: var(--wxp-clr-text-200);
+    }
+    dialog .close {
+        line-height: 1;
+        font-size: 35px;
+        color: var(--wxp-clr-text-100);
+    }
+    dialog .body {
+        padding: 10px;
+    }
+</style>

@@ -1,0 +1,36 @@
+---
+
+import Layout from "../layouts/Primary.astro";
+
+---
+
+<Layout title="Page not Found">
+    <h2 class="h2">Page not Found</h2>
+    <p class="text">We couldn't find the page you're looking for.</p>
+    <div class="flex v-center gap-200">
+        <button class="button" onclick="history.back()">Go Back</button>
+        <a class="button" href="/">Go Home</a>
+    </div>
+</Layout>
+
+<style>
+    h2 {
+        margin-block: 20px 0;
+        font-size: 55px;
+    }
+    .text {
+        margin-block: 10px 15px;
+        font-size: 20px;
+        color: var(--wxp-clr-text-100);
+    }
+    .error {
+        background: var(--wxp-clr-dark-900);
+        border-radius: 5px;
+        margin-block: 5px 15px;
+        padding: 3px 4px;
+        width: fit-content;
+        color: var(--wxp-clr-text-100);
+        font-family: var(--wxp-ff-mono);
+        font-size: 14px;
+    }
+</style>
