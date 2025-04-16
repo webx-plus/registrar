@@ -7,9 +7,11 @@ Clone the repo, install the deps and build and then run the entry file (`./dist/
 You also need to provide the environment variables (see .env.example)
 
 We use Clerk for Authentication & User Management, you can find the docs [here](https://clerk.com/docs/overview)
+
 Cloudlfare Turnstile is used to prevent botting on the domain registration API
 
 Build: `npm run build`
+
 Dev Server: `npm run dev`
 
 Also dockerfile is provided if u want to use docker. Just build the image and run it
