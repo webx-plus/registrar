@@ -8,8 +8,9 @@ import Dropdown from "../components/Dropdown.astro";
 
 import Domain from "../components/Domain.astro";
 import PagedController from "../components/PagedController.astro";
+import TargetInput from "../components/TargetInput.astro";
 
-const userId = Astro.locals.auth().sessionClaims.userId;
+const userId = Astro.locals.auth().sessionClaims!.userId as string;
 if (!userId) Astro.redirect("https://accounts.webxplus.org/login");
 
 type TLDResponse = {
@@ -32,6 +33,7 @@ const tld_request = await sendDNSRequest("tlds", "GET", userId) as TLDResponse;
 if (tld_request.status != 200) console.log("Error loading TLDs");
 let tlds = tld_request.status == 200 ? tld_request.data.can_register : {} as types.TLD;
 const user = await Astro.locals.currentUser();
+/* @ts-ignore */
 if (tlds.reserved) tlds.reserved = tlds.reserved.filter(x => user?.privateMetadata && user.privateMetadata.reserved_tlds?.includes(x));
 const labels = {
     real: "Real",
@@ -51,6 +53,8 @@ const sorted_domains = domains.sort((a, b) => {
     if (sort_method === "updated") return parseInt(b.updated_at) - parseInt(a.updated_at);
     return 0;
 });
+
+const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA-Z0-9-]{1,61})?[a-zA-Z0-9])\.)+[a-zA-Z]{2,63}))(:[0-9]{1,5})?(\/[a-zA-Z0-9-_%\+]+)*\/?$";
 
 ---
 
@@ -79,9 +83,9 @@ const sorted_domains = domains.sort((a, b) => {
         </div>
     </div>
     <div id="domainList">
-        {sorted_domains.map((x, i) => <Domain {...x} on_first_page={i < 2} />)}
+        {sorted_domains.map((x, i) => <Domain {...x} on_first_page={i < 15} />)}
     </div>
-    <PagedController rows_per_page={2} total_rows={domains.length} />
+    <PagedController rows_per_page={15} total_rows={domains.length} />
 </Layout>
 
 <Modal id="domainRegisterModal" title="Register a new domain">
@@ -103,8 +107,7 @@ const sorted_domains = domains.sort((a, b) => {
         </div>
         <div class="form-group">
             <label for="domainRegisterTarget" class="label">Target</label>
-            <input type="text" id="domainRegisterTarget" class="input">
-            <p class="input-note">You can put either an IP address or a public GitHub repo. It should serve a index.html file at the root location</p>
+            <TargetInput id="domainRegisterTarget" />
         </div>
         <div class="form-group">
             <div class="flex v-center gap-100">
@@ -144,8 +147,7 @@ const sorted_domains = domains.sort((a, b) => {
         </div>
         <div class="form-group">
             <label for="recordCreateTarget" class="label">Target</label>
-            <input type="text" id="recordCreateTarget" class="input">
-            <p class="input-note">You can put either an IP address or a public GitHub repo. It should serve a index.html file at the root location</p>
+            <TargetInput id="recordCreateTarget" />
         </div>
         <div class="form-group">
             <div class="flex v-center gap-100">
@@ -163,6 +165,17 @@ const sorted_domains = domains.sort((a, b) => {
             <p class="form-result" id="recordCreateError"></p>
         </div>
     </form>
+</Modal>
+
+<Modal id="targetDetailsModal" title="Target Details">
+    <p>You may use any IPv4 address or most domain names</p>
+    <p>You may include a port number and/or path. If you provide a path, it will be considered the root of the domain</p>
+    <br />
+    <p>Protocol is optional and will be assumed HTTP for IP addresses and HTTPS for domains. Protocol must br either HTTP or HTTPS if provided.</p>
+    <br />
+    <p>We do not support URLs to raw github content. To use a github repo, you must first publish your site to GitHub Pages and then use that URL as the target. <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site#creating-a-github-pages-site" target="_blank">Learn more about publishing to GitHub Pages</a></p>
+    <br />
+    <p>If you think you have found a mistake with our validation please <a href="https://discord.gg/b5CYjbfHRK">join our Discord</a> and let us know.</p>
 </Modal>
 
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" crossorigin="anonymous" async defer></script>

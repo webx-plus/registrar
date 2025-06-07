@@ -2,6 +2,7 @@
 import type * as types from "../../types.ts";
 
 import Record from "./Record.astro";
+import TargetInput from "./TargetInput.astro";
 
 export type Props = types.Domain & {
     on_first_page: boolean;
@@ -31,12 +32,11 @@ const { _id, name, tld, target, note, searchable, records, created_at, updated_a
     </div>
     <div class="domain-body">
         <p class="domain-heading">Target</p>
-        <div class="flex v-center gap-050">
-            <p class="domain-target" data-domain-field="target">{target}</p>
+        <TargetInput type="inline" value={target}>
             <button class="domain-edit-button | nostyles pointer" data-domain-edit="target" data-action-state="edit">
                 <i class="bx bx-pencil"></i>
             </button>
-        </div>
+        </TargetInput>
         <p class="domain-heading">Searchable</p>
         <div class="flex v-center gap-100">
             <label class="toggle">
@@ -91,6 +91,7 @@ const { _id, name, tld, target, note, searchable, records, created_at, updated_a
             const field = domain.querySelector(`[data-domain-field="${x.dataset.domainEdit}"]`) as HTMLInputElement;
             if (!field) return;
             if (x.dataset.actionState === "edit") {
+                field.dataset.previousValue = field.innerText;
                 field.setAttribute("contenteditable", "true");
                 field.focus();
                 x.dataset.actionState = "save";
@@ -197,6 +198,12 @@ const { _id, name, tld, target, note, searchable, records, created_at, updated_a
             if (!editButton) return;
             if (editButton.dataset.actionState != "save") return;
             if (e.key === "Enter" && !e.shiftKey) editButton.click();
+            if (e.key === "Escape") {
+                x.innerText = x.dataset.previousValue!;
+                x.setAttribute("contenteditable", "false");
+                editButton.dataset.actionState = "edit";
+                editButton.innerHTML = "<i class='bx bx-pencil'></i>";
+            }
         });
     };
 
@@ -260,6 +267,12 @@ const { _id, name, tld, target, note, searchable, records, created_at, updated_a
     }
     .domain-card [contenteditable="true"]:is(:hover, :focus-visible) {
         outline: 1px solid transparent;
+    }
+    .domain-card [contenteditable="true"].input-error {
+        border-color: var(--wxp-clr-danger-400)
+    }
+    .domain-card [contenteditable="true"].input-error:is(:focus-visible) {
+        border-color: var(--wxp-clr-warning-400);
     }
 
     .domain-expand-button {

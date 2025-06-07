@@ -1,6 +1,8 @@
 ---
 import type * as types from "../../types.ts";
 
+import TargetInput from "./TargetInput.astro";
+
 export type Props = types.Record & {
     domain_name: string;
     domain_id: string;
@@ -18,12 +20,11 @@ const { domain_name, domain_id, _id, name, target, searchable } = Astro.props;
         <span class="record-domain">.{domain_name}</span>
     </td>
     <td>
-        <div class="flex v-center gap-050">
-            <p class="domain-target" data-record-field="target">{target}</p>
+        <TargetInput type="inline" value={target} thingy="record">
             <button class="domain-edit-button | nostyles pointer" data-record-edit="target" data-action-state="edit">
                 <i class="bx bx-pencil"></i>
             </button>
-        </div>
+        </TargetInput>
     </td>
     <td>
         <div class="flex v-center gap-100">
@@ -33,9 +34,6 @@ const { domain_name, domain_id, _id, name, target, searchable } = Astro.props;
             </label>
             <label for={"domain_" + domain_id + "_record_" + _id + "_searchable"} class="toggle-label | flex v-center gap-050">
                 <p>Searchable</p>
-                <p class="domain-edit-button" data-action-state="edit" data-record-status="searchable">
-                    <i class="bx bx-pencil"></i>
-                </p>
             </label>
         </div>
     </td>
@@ -56,6 +54,7 @@ const { domain_name, domain_id, _id, name, target, searchable } = Astro.props;
             const field = record.querySelector(`[data-record-field="${x.dataset.recordEdit}"]`) as HTMLInputElement;
             if (!field) return;
             if (x.dataset.actionState === "edit") {
+                field.dataset.previousValue = field.innerText;
                 field.setAttribute("contenteditable", "true");
                 x.dataset.actionState = "save";
                 x.innerHTML = "<i class='bx bx-save'></i>";
@@ -95,6 +94,31 @@ const { domain_name, domain_id, _id, name, target, searchable } = Astro.props;
             } else if (x.dataset.actionState === "error") {
                 alert(`Action failed with status (${x.dataset.actionResult})\nPlease see the console for more details`);
             };
+        });
+    };
+    const recordEditFields = document.querySelectorAll("[data-record-field]") as NodeListOf<HTMLInputElement>;
+    for (let x of recordEditFields) {
+        x.addEventListener("click", () => {
+            const record = x.closest("tr");
+            if (!record) return;
+            const editButton = record.querySelector(`[data-record-edit="${x.dataset.recordField}"]`) as HTMLButtonElement;
+            if (!editButton) return;
+            if (editButton.dataset.actionState != "edit") return;
+            editButton.click();
+        });
+        x.addEventListener("keydown", e => {
+            const record = x.closest("tr");
+            if (!record) return;
+            const editButton = record.querySelector(`[data-record-edit="${x.dataset.recordField}"]`) as HTMLButtonElement;
+            if (!editButton) return;
+            if (editButton.dataset.actionState != "save") return;
+            if (e.key === "Enter" && !e.shiftKey) editButton.click();
+            if (e.key === "Escape") {
+                x.innerText = x.dataset.previousValue!;
+                x.setAttribute("contenteditable", "false");
+                editButton.dataset.actionState = "edit";
+                editButton.innerHTML = "<i class='bx bx-pencil'></i>";
+            }
         });
     };
 

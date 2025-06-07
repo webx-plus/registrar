@@ -14,4 +14,11 @@ export default defineConfig({
     })],
     adapter: node({ mode: 'standalone' }),
     output: 'server',
+    // vite: {
+    //     build: {
+    //         rollupOptions: {
+    //             external: ["astro/components/Code.d.astro.js"],
+    //         },
+    //     },
+    // },
 })

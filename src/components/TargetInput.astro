@@ -1,0 +1,83 @@
+---
+
+export type Props = {
+	id?: string;
+    type?: "default" | "inline";
+    thingy?: string;
+	value?: string;
+}
+
+const { id, type = "default", thingy, value } = Astro.props;
+
+const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA-Z0-9-]{1,61})?[a-zA-Z0-9])\.)+[a-zA-Z]{2,63}))(:[0-9]{1,5})?(\/[a-zA-Z0-9-_%\+]+)*\/?$";
+
+---
+
+
+{type === "inline" ? 
+
+<div class="target-input">
+    <div class="flex v-center gap-050">
+        {thingy === "record" ? <p class="domain-target" data-record-field="target">{value}</p> : <p class="domain-target" data-domain-field="target">{value}</p>}
+        <slot />
+        <button class="nostyles pointer push-right" type="button" onclick="openModal('targetDetailsModal')">
+            <i class="bx bx-info-circle" aria-label="Click to view details about target validation"></i>
+        </button>
+    </div>
+    <p class="input-note | notallowed-domain">You must use GitHub Pages instead of raw github URLs</p>
+</div>
+
+: <div class="target-input">
+    <input type="text" id={id} class="input" value={value} pattern={target_regex} />
+    <p class="input-note | notallowed-domain">Raw github URLs are not supported. Please publish your site to GitHub Pages and use that URL instead</p>
+    <div class="details | flex v-center">
+        <p class="input-note">You may provide a URL or IPv4 address</p>
+        <button class="nostyles pointer push-right" type="button" onclick="openModal('targetDetailsModal')">Details</button>
+    </div>
+</div>}
+
+<style>
+    .target-input {
+        margin-bottom: .5rem;
+        width: max-content;
+    }
+    .notallowed-domain {
+        margin-bottom: 0;
+        display: none;
+        color: var(--wxp-clr-danger-400);
+    }
+</style>
+
+<script>
+    const targetInputs = document.querySelectorAll(".target-input") as NodeListOf<HTMLDivElement>;
+
+    const regex = /^(https?\:\/\/)?((([0-9]{0,3}\.?){4})|((([a-zA-Z0-9]([a-zA-Z0-9-]{1,61})?[a-zA-Z0-9])\.)+[a-zA-Z]{2,63}))(:[0-9]{1,5})?(\/[a-zA-Z0-9-_%\+]+)*\/?$/;
+    const badDomains = [
+        "github.com",
+        "raw.githubusercontent.com",
+    ]
+
+    targetInputs.forEach(x => {
+        const input = (x.querySelector("input") as HTMLInputElement) ?? (x.querySelector("[data-domain-field='target']") as HTMLParagraphElement) ?? (x.querySelector("[data-record-field='target']") as HTMLParagraphElement);
+        const note = x.querySelector(".input-note") as HTMLParagraphElement;
+        const notallowed = x.querySelector(".notallowed-domain") as HTMLParagraphElement;
+        input.addEventListener("input", async() => {
+            const value = input.value ?? input.innerText;
+            if (!value.match(regex)) {
+                input.classList.add("input-error");
+            } else {
+                input.classList.remove("input-error");
+                try {
+                    const url = new URL(value);
+                    if (badDomains.includes(url.hostname)) {
+                        notallowed.style.display = "block";
+                        input.classList.add("input-error");
+                    } else {
+                        input.classList.remove("input-error");
+                        notallowed.style.display = "none";
+                    };
+                } catch(e) {};
+            };
+        });
+    });
+</script>
