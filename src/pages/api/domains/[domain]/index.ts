@@ -45,10 +45,11 @@ export const PUT:APIRoute = async (context) => {
             note: body.note ?? "",
         });
         const user = await clerkClient(context).users.getUser(locals.auth().userId);
+        console.log(user.privateMetadata);
         await clerkClient(context).users.updateUser(locals.auth().userId, {
             privateMetadata: {
                 ...user.privateMetadata,
-                owned_domains: [...user.privateMetadata.owned_domains, params.domain],
+                owned_domains: user.privateMetadata.owned_domains ? [...user.privateMetadata.owned_domains, params.domain] : [params.domain],
             }
         })
         if (result.status !== 200) return new Response(JSON.stringify({success: false, error: result.error}), {status: result.status});

@@ -438,205 +438,6 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         });
         document.querySelector(".paged-controller")?.dispatchEvent(event);
     };
-
-    // const domainSearch = document.querySelector("#domainSearch") as HTMLInputElement;
-    // domainSearch.addEventListener("input", () => renderPage());
-
-    // const domainSortInputs = document.querySelectorAll("[name='domainSort']");
-    // for (let x of domainSortInputs) x.addEventListener("change", () => renderPage());
-
-
-    // try {
-    //     const request = await fetch("/api/domains/?owned=true", {
-    //         method: "GET",
-    //         headers: {
-    //             "Content-Type": "application/json",
-    //         }
-    //     });
-    //     if (request.status == 401) document.location = "/login";
-    //     if (request.status != 200) {
-    //         container.innerHTML = `<p class="domain-error | text-center">Error loading domains (${request.status})</p>`;
-    //     } else {
-    //         const result = await request.json() as {data: types.Domain[]};
-    //         domains = result.data;
-    
-    //         (document.querySelector("#domainPageCount") as HTMLParagraphElement).innerText = result.data.length.toString();
-            
-    //         if (sessionStorage.getItem("domain_selected_reload")) {
-    //             const sorted = generatePage();
-    //             const index = sorted.findIndex(x => x._id === sessionStorage.getItem("domain_selected_reload"));
-    //             if (index > -1) {
-    //                 const page = Math.floor(index / domains_per_page);
-    //                 current_page = page;
-    //                 renderPage();
-    
-    //                 const domain = document.querySelector(`[data-domain-id="${sessionStorage.getItem("domain_selected_reload")}"]`);
-    //                 if (domain) domain.setAttribute("aria-expanded", "true");
-    //                 sessionStorage.removeItem("domain_selected_reload");
-    //             } else {
-    //                 renderPage();
-    //             };
-    //         } else {
-    //             renderPage();
-    //         };
-    //     };
-    // } catch (e:any) {
-    //     console.error(e);
-    //     container.innerHTML = `<p class="domain-error | text-center">Error loading domains<br>${e.message}</p>`;
-    // };
-
-    // function mapDomain(x:types.Domain, i:number) {
-    //     return `<div class="domain-card" data-domain-id="${x._id}" data-domain-name="${x.name}.${x.tld}" aria-expanded="false" ${i >= domains_per_page ? `style="display: none"` : ""}>
-    //         <div class="domain-header | flex v-center">
-    //             <div class="domain-expand">
-    //                 <button class="domain-expand-button | nostyles" data-domain-expand="${x._id}">
-    //                     <i class="bx bx-chevron-right"></i>
-    //                 </button>
-    //             </div>
-    //             <div class="domain-details">
-    //                 <h3 class="h3">${x.name}<span class="domain-tld">.${x.tld}</span></h3>
-    //                 <div class="flex v-center gap-050">
-    //                     <p class="domain-note" data-domain-field="note">${x.note ?? ""}</p>
-    //                     <button class="domain-edit-button | nostyles pointer" data-domain-edit="note" data-action-state="edit">
-    //                         <i class="bx bx-pencil"></i>
-    //                     </button>
-    //                 </div>
-    //             </div>
-    //         </div>
-    //         <div class="domain-body">
-    //             <p class="domain-heading">Target</p>
-    //             <div class="flex v-center gap-050">
-    //                 <p class="domain-target" data-domain-field="target">${x.target}</p>
-    //                 <button class="domain-edit-button | nostyles pointer" data-domain-edit="target" data-action-state="edit">
-    //                     <i class="bx bx-pencil"></i>
-    //                 </button>
-    //             </div>
-    //             <p class="domain-heading">Searchable</p>
-    //             <div class="flex v-center gap-100">
-    //                 <label class="toggle">
-    //                     <input type="checkbox" data-domain-field="searchable" id="domain_${x._id}_searchable" ${x.searchable ? "checked" : ""}>
-    //                     <span aria-hidden="true"></span>
-    //                 </label>
-    //                 <label for="domain_${x._id}_searchable" class="toggle-label | flex v-center gap-050">
-    //                     <p>Searchable</p>
-    //                     <p class="domain-edit-button" data-action-state="edit" data-domain-status="searchable">
-    //                         <i class="bx bx-pencil"></i>
-    //                     </p>
-    //                 </label>
-    //             </div>
-    //             <p class="input-note">Disable to hide your website from searches and bulk domain listing. Your domain will still be accessible via the the URL</p>
-    //             <div class="flex v-center gap-100">
-    //                 <p class="domain-heading">Subdomains</p>
-    //                 <button class="domain-create | push-right nostyles pointer" data-domain-action="record_create">
-    //                     <span>Add Subdomain</span>
-    //                 </button>
-    //             </div>
-    //             <table>
-    //                 <thead class="sr-only">
-    //                     <tr>
-    //                         <th>Name</th>
-    //                         <th>Target</th>
-    //                         <th>Searchable</th>
-    //                         <th>Actions</th>
-    //                     </tr>
-    //                 </thead>
-    //                 <tbody>${x.records.map(y => `<tr data-record-id="${y._id}" data-record-name="${y.name}" data-record-full="${y.name}.${x.name}.${x.tld}">
-    //                         <td>
-    //                         <span class="record-name">${y.name}</span>
-    //                         <span class="record-domain">.${x.name}.${x.tld}</span>
-    //                     </td>
-    //                     <td>
-    //                         <div class="flex v-center gap-050">
-    //                             <p class="domain-target" data-record-field="target">${y.target}</p>
-    //                             <button class="domain-edit-button | nostyles pointer" data-record-edit="target" data-action-state="edit">
-    //                                 <i class="bx bx-pencil"></i>
-    //                             </button>
-    //                         </div>
-    //                     </td>
-    //                     <td>
-    //                         <div class="flex v-center gap-100">
-    //                             <label class="toggle">
-    //                                 <input type="checkbox" data-record-field="searchable" id="domain_${x._id}_record_${y._id}_searchable" ${y.searchable ? "checked" : ""}>
-    //                                 <span aria-hidden="true"></span>
-    //                             </label>
-    //                             <label for="domain_${x._id}_record_${y._id}_searchable" class="toggle-label | flex v-center gap-050">
-    //                                 <p>Searchable</p>
-    //                                 <p class="domain-edit-button" data-action-state="edit" data-record-status="searchable">
-    //                                     <i class="bx bx-pencil"></i>
-    //                                 </p>
-    //                             </label>
-    //                         </div>
-    //                     </td>
-    //                     <td>
-    //                         <button class="domain-edit-button | nostyles pointer" data-domain-action="record_delete">
-    //                             <i class="bx bx-trash"></i>
-    //                         </button>
-    //                     </td>
-    //                 </tr>`).join("")}</tbody>
-    //             </table>
-    //         </div>
-    //     </div>`;
-    // };
-
-    // function sortDomains(domains2?: types.Domain[]) {
-    //     if (!domains2) domains2 = domains;
-    //     let sort_by = document.querySelector("[name='domainSort']:checked") as HTMLInputElement;
-    //     if (!sort_by) {
-    //         sort_by = document.querySelector("[name='domainSort'][value='name']") as HTMLInputElement;
-    //         sort_by.checked = true;
-    //     };
-    //     if (sort_by.value === "name") {
-    //         /* @ts-ignore */
-    //         return domains.sort((a, b) => a.name.localeCompare(b.name));
-    //     } else if (sort_by.value === "tld") {
-    //         /* @ts-ignore */
-    //         return domains.sort((a, b) => a.tld.localeCompare(b.tld));
-    //     } else if (sort_by.value === "created") {
-    //         return domains.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    //     } else if (sort_by.value === "updated") {
-    //         return domains.sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
-    //     };
-    //     return domains;
-    // };
-    // function searchDomains() {
-    //     const search = document.querySelector("#domainSearch") as HTMLInputElement;
-    //     if (!search) return domains;
-    //     return domains.filter(x => x.name.toLowerCase().includes(search.value.toLowerCase()) || x.tld.toLowerCase().includes(search.value.toLowerCase()));
-    // }
-    // function generatePage() {
-    //     const domainSearch = document.querySelector("#domainSearch") as HTMLInputElement;
-    //     const term = domainSearch.value.toLowerCase();
-    //     const search_results = domains.filter(x => x.name.toLowerCase().includes(term) || x.tld.toLowerCase().includes(term) || (x.note && x.note.toLowerCase().includes(term)));
-    //     const sorted = sortDomains(search_results);
-    //     return sorted;
-    // };
-    // function renderPage() {
-    //     const container = document.querySelector("#domainList") as HTMLDivElement;
-    //     const generatedDomains = generatePage();
-    //     if (generatedDomains.length === 0) {
-    //         container.innerHTML = `<p class="domain-error | text-center">No domains found</p>`;
-    //         return;
-    //     };
-    //     container.innerHTML = generatedDomains.slice(current_page * domains_per_page, (current_page + 1) * domains_per_page).map(mapDomain).join("");
-    //     addDomainListeners();
-    //     (document.querySelector("#domainPageStart") as HTMLParagraphElement).innerText = `${current_page * domains_per_page + 1}`;
-    //     (document.querySelector("#domainPageEnd") as HTMLParagraphElement).innerText = `${Math.min(generatedDomains.length, (current_page + 1) * domains_per_page)}`;
-    //     const pageCount = Math.ceil(generatedDomains.length / domains_per_page);
-    //     const pageControls = document.querySelector(".domain-page-controls") as HTMLDivElement;
-    //     Array.from(pageControls.children as HTMLCollectionOf<HTMLParagraphElement>).forEach(x => {
-    //         if (!isNaN(parseInt(x.dataset.page!))) pageControls.removeChild(x);
-    //     });
-    //     for (let x = 0; x < Math.max(pageCount, 1); x++) {
-    //         const pageButton = document.createElement("button") as HTMLButtonElement;
-    //         pageButton.classList.add("domain-page-control");
-    //         pageButton.classList.add("nostyles");
-    //         pageButton.classList.add("pointer");
-    //         pageButton.setAttribute("data-page", `${x}`);
-    //         if (x === current_page) pageButton.setAttribute("data-page-current", "true");
-    //         pageButton.innerText = `${x + 1}`;
-    //         pageControls.insertBefore(pageButton, pageControls.querySelector(".domain-page-control[data-page='next']"));
-    //     };
-    // };
 </script>
 
 <style>
@@ -649,19 +450,19 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         min-width: 150px;
     }
 
-    .domain-created {
+    :global(.domain-created) {
         background: var(--wxp-clr-danger-800);
         border: 1px solid var(--wxp-clr-dark-300);
         border-radius: 10px;
         padding: 10px;
         margin-bottom: 10px;
     }
-    .domain-created-close {
+    :global(.domain-created-close) {
         display: grid;
         place-items: center;
         font-size: 30px;
     }
-    .domain-created b {
+    :global(.domain-created b) {
         color: var(--wxp-clr-text-200);
     }
 
