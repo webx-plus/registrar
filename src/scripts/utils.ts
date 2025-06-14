@@ -7,7 +7,7 @@ async function sendDNSRequest(url:string, method:"GET" | "PUT" | "PATCH" | "DELE
         method: method,
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Registrar ${process.env.DNS_API_KEY}`,
+            "Authorization": `Registrar ${process.env.DNS_REGISTRAR_TOKEN}`,
             "X-Requesting-User": user_id ?? undefined,
         },
         body: method === "GET" ? undefined : JSON.stringify(data),

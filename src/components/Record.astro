@@ -26,7 +26,7 @@ const { domain_name, domain_id, _id, name, target, searchable } = Astro.props;
             </button>
         </TargetInput>
     </td>
-    <td>
+    {/*<td>
         <div class="flex v-center gap-100">
             <label class="toggle">
                 <input type="checkbox" data-record-field="searchable" id={"domain_" + domain_id + "_record_" + _id + "_searchable"} checked={searchable}>
@@ -36,7 +36,7 @@ const { domain_name, domain_id, _id, name, target, searchable } = Astro.props;
                 <p>Searchable</p>
             </label>
         </div>
-    </td>
+    </td>*/}
     <td>
         <button class="domain-edit-button | nostyles pointer" data-domain-action="record_delete">
             <i class="bx bx-trash"></i>
