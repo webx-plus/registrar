@@ -42,11 +42,11 @@ const labels = {
     reserved: "Reserved",
 } as {[T in keyof types.TLD]: string};
 
-const sort_method = Astro.cookies.get("domain_sort")?.value ?? "name";
+const sort_method = Astro.cookies.get("domain_sort")?.value ?? "updated";
 
 //sort according to the method
 const sorted_domains = domains.sort((a, b) => {
-    if (sort_method === "name") return b.name.toLowerCase().localeCompare(a.name.toLowerCase());
+    if (sort_method === "name") return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
     /* @ts-ignore */
     if (sort_method === "created") return parseInt(b.created_at) - parseInt(a.created_at);
     /* @ts-ignore */
