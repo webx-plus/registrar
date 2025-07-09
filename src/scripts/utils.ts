@@ -2,8 +2,11 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = import.meta.env.JWT_SECRET
 
+const DNS_API_URL = import.meta.env.DNS_API_URL;
+const DNS_API_VERSION = import.meta.env.DNS_API_VERSION;
+
 async function sendDNSRequest(url:string, method:"GET" | "PUT" | "PATCH" | "DELETE", user_id:string, data?:any) {
-    const request = await fetch(`https://dns.webxplus.org/${url}`, {
+    const request = await fetch(`${DNS_API_URL}/${DNS_API_VERSION}/${url}`, {
         method: method,
         headers: {
             "Content-Type": "application/json",
@@ -18,7 +21,8 @@ async function sendDNSRequest(url:string, method:"GET" | "PUT" | "PATCH" | "DELE
 };
 
 async function log(content:any, type?:"error" | "reload" | "other") {
-    if (!process.env.LOG_WEBHOOK) return;
+    console.log(content);
+    if (!import.meta.env.LOG_WEBHOOK) return;
 
     type = type ?? "other";
 
@@ -29,7 +33,7 @@ async function log(content:any, type?:"error" | "reload" | "other") {
     }
     const webhook_data = log_formats[type] ?? log_formats.other;
     content = content.toString();
-    const request = await fetch(process.env.LOG_WEBHOOK, {
+    const request = await fetch(import.meta.env.LOG_WEBHOOK, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -40,7 +44,7 @@ async function log(content:any, type?:"error" | "reload" | "other") {
             embeds: [{
                 color: webhook_data.color,
                 description: `${content.length > 2000 ? content.slice(0, 1950) + `\n+${content.length - 1950} more characters` : content}`,
-                author: { name: process.env.VPS_NAME },
+                author: { name: import.meta.env.VPS_NAME },
             }]
         })
     }).catch(console.log);

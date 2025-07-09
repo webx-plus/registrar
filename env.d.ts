@@ -10,13 +10,19 @@ declare namespace App {
 
 interface ImportMetaEnv {
     readonly PORT: string;
-        readonly DNS_REGISTRAR_TOKEN: string;
-        readonly PUBLIC_CLERK_PUBLISHABLE_KEY: string;
-        readonly CLERK_SECRET_KEY: string;
-        readonly TURNSTILE_SECRET_KEY: string;
-        readonly TURNSTILE_SITE_KEY: string;
-        readonly JWT_SECRET: string;
-    }
+
+    readonly DNS_API_URL: string;
+    readonly DNS_API_VERSION: string;
+    readonly DNS_REGISTRAR_TOKEN: string;
+
+    readonly PUBLIC_CLERK_PUBLISHABLE_KEY: string;
+    readonly CLERK_SECRET_KEY: string;
+
+    readonly TURNSTILE_SECRET_KEY: string;
+    readonly TURNSTILE_SITE_KEY: string;
+
+    readonly JWT_SECRET: string;
+}
 interface ImportMeta {
     readonly env: ImportMetaEnv;
 }
