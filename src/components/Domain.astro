@@ -8,7 +8,7 @@ export type Props = types.Domain & {
     on_first_page: boolean;
 };
 
-const { _id, name, tld, target, note, searchable, records, created_at, updated_at, on_first_page } = Astro.props;
+const { _id, name, tld, note, searchable, records, created_at, updated_at, on_first_page } = Astro.props;
 
 
 ---
@@ -31,12 +31,6 @@ const { _id, name, tld, target, note, searchable, records, created_at, updated_a
         </div>
     </div>
     <div class="domain-body">
-        <p class="domain-heading">Target</p>
-        <TargetInput type="inline" value={target}>
-            <button class="domain-edit-button | nostyles pointer" data-domain-edit="target" data-action-state="edit">
-                <i class="bx bx-pencil"></i>
-            </button>
-        </TargetInput>
         <p class="domain-heading">Searchable</p>
         <div class="flex v-center gap-100">
             <label class="toggle">
@@ -52,20 +46,21 @@ const { _id, name, tld, target, note, searchable, records, created_at, updated_a
         </div>
         <p class="input-note">Disable to hide your website from searches and bulk domain listing. Your domain will still be accessible via the the URL</p>
         <div class="flex v-center gap-100">
-            <p class="domain-heading">Subdomains</p>
+            <p class="domain-heading">Records</p>
             <button class="domain-create | push-right nostyles pointer" data-domain-action="record_create">
-                <span>Add Subdomain</span>
+                <span>Add Record</span>
             </button>
         </div>
         <table>
             <thead class="sr-only">
                 <tr>
+                    <th>Type</th>
                     <th>Name</th>
-                    <th>Target</th>
+                    <th>Value</th>
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>{records.map(x => <Record {...x} domain_name={name + "." + tld} domain_id={_id} />)}</tbody>
+            <tbody>{records.map(x => <Record {...x} />)}</tbody>
         </table>
     </div>
 </div>

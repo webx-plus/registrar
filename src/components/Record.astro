@@ -3,40 +3,28 @@ import type * as types from "../../types.ts";
 
 import TargetInput from "./TargetInput.astro";
 
-export type Props = types.Record & {
-    domain_name: string;
-    domain_id: string;
-};
+export type Props = types.Record;
 
-const { domain_name, domain_id, _id, name, target, searchable } = Astro.props;
+const { _id, name, type, value } = Astro.props;
 
 
 ---
 
 
-<tr data-record-id={_id} data-record-name={name} data-record-full={name + "." + domain_name}></tr>
+<tr data-record-id={_id} data-record-name={name}></tr>
     <td>
-        <span class="record-name">{name}</span>
-        <span class="record-domain">.{domain_name}</span>
+        <span class="record-type">{type}</span>
     </td>
     <td>
-        <TargetInput type="inline" value={target} thingy="record">
-            <button class="domain-edit-button | nostyles pointer" data-record-edit="target" data-action-state="edit">
+        <span class="record-name">{name}</span>
+    </td>
+    <td>
+        <TargetInput type="inline" value={value} thingy="record">
+            <button class="domain-edit-button | nostyles pointer" data-record-edit="value" data-action-state="edit">
                 <i class="bx bx-pencil"></i>
             </button>
         </TargetInput>
     </td>
-    {/*<td>
-        <div class="flex v-center gap-100">
-            <label class="toggle">
-                <input type="checkbox" data-record-field="searchable" id={"domain_" + domain_id + "_record_" + _id + "_searchable"} checked={searchable}>
-                <span aria-hidden="true"></span>
-            </label>
-            <label for={"domain_" + domain_id + "_record_" + _id + "_searchable"} class="toggle-label | flex v-center gap-050">
-                <p>Searchable</p>
-            </label>
-        </div>
-    </td>*/}
     <td>
         <button class="domain-edit-button | nostyles pointer" data-domain-action="record_delete">
             <i class="bx bx-trash"></i>

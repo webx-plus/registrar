@@ -16,8 +16,13 @@ if (!userId) Astro.redirect("https://accounts.webxplus.org/login");
 type TLDResponse = {
     status: number;
     data: {
-        valid_tlds: types.TLD;
-        can_register: types.TLD;
+        valid: string[];
+        available: string[];
+        info: {
+            [tld: string]: {
+                reserved: boolean;
+            }
+        }
     }
 }
 type DomainResponse = {
@@ -31,16 +36,13 @@ const domains = domain_request.status == 200 ? domain_request.data : [];
 
 const tld_request = await sendDNSRequest("tlds", "GET", userId) as TLDResponse;
 if (tld_request.status != 200) console.log("Error loading TLDs");
-let tlds = tld_request.status == 200 ? tld_request.data.can_register : {} as types.TLD;
+let tlds = tld_request.status == 200 ? tld_request.data.available : [] as string[];
 const user = await Astro.locals.currentUser();
-/* @ts-ignore */
-if (tlds.reserved) tlds.reserved = tlds.reserved.filter(x => user?.privateMetadata && user.privateMetadata.reserved_tlds?.includes(x));
-const labels = {
-    real: "Real",
-    webx: "WebX",
-    webx_plus: "WebX+",
-    reserved: "Reserved",
-} as {[T in keyof types.TLD]: string};
+if (!user) return Astro.redirect("https://accounts.webxplus.org/login");
+
+const user_tlds = user.privateMetadata.reserved_tlds ?? [];
+
+tlds = tlds.filter(x => (tld_request.data.info[x] ? !tld_request.data.info[x].reserved : true) || user_tlds.includes(x));
 
 const sort_method = Astro.cookies.get("domain_sort")?.value ?? "updated";
 
@@ -97,9 +99,7 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
                 <div class="push-right flex v-center">
                     <p class="input-addon">.</p>
                     <select id="domainRegisterTld" class="nostyles">
-                        {(Object.keys(tlds) as unknown as (keyof typeof tlds)[]).map((x) => <optgroup label={labels[x]}>
-                            {tlds[x].sort((z, y) => z.localeCompare(y)).map((y:any) => <option value={y} selected={y === "webx"}>{y}</option>)}
-                    </optgroup>)}
+                        {tlds.sort((z, y) => z.localeCompare(y)).map((y:any) => <option value={y} selected={y === "webx"}>{y}</option>)}
                     </select>
                 </div>
             </div>
@@ -135,10 +135,20 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         </div>
     </form>
 </Modal>
-<Modal id="recordCreateModal" title="New Subdomain">
+<Modal id="recordCreateModal" title="New Record">
     <form id="recordCreateForm">
         <div class="form-group">
-            <label for="recordCreateName" class="label">Subdomain</label>
+            <label for="recordCreateType" class="label">Type</label>
+            <div class="input | flex v-center">
+                <select>
+                    <option value="WEB">WEB</option>
+                    <option value="TXT">TXT</option>
+                    <option value="RED">RED</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="recordCreateName" class="label">Name</label>
             <div class="input | flex v-center">
                 <input type="text" id="recordCreateName" class="nostyles f1" maxlength="24" minlength="3" pattern="[a-z0-9-.]{3,24}" data-domain-input="subdomain">
                 <p class="input-addon push-right" id="recordCreateDomain"></p>
@@ -146,22 +156,12 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
             <p class="input-note">3 - 24 characters, alphanumeric and hyphens & dots (.) only, case insensitive</p>
         </div>
         <div class="form-group">
-            <label for="recordCreateTarget" class="label">Target</label>
-            <TargetInput id="recordCreateTarget" />
-        </div>
-        <div class="form-group">
-            <div class="flex v-center gap-100">
-                <label class="toggle">
-                    <input type="checkbox" id="recordCreateSearchable" checked />
-                    <span aria-hidden="true"></span>
-                </label>
-                <label for="recordCreateSearchable" class="toggle-label">Searchable</label>
-            </div>
-            <p class="input-note">Disable to hide your website from searches and bulk domain listing. Your domain will still be accessible via the the URL</p>
+            <label for="recordCreateValue" class="label">Value</label>
+            <TargetInput id="recordCreateValue" />
         </div>
         <br />
         <div class="flex v-center gap-200">
-            <button type="submit" class="button">Create Subdomain</button>
+            <button type="submit" class="button">Create Record</button>
             <p class="form-result" id="recordCreateError"></p>
         </div>
     </form>
@@ -335,56 +335,62 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         error.innerText = "";
         try {
             let record_create_domain:string = (document.querySelector("#recordCreateModal") as HTMLDialogElement).dataset.createRecordId!
+            const type = document.querySelector("#recordCreateType") as HTMLSelectElement;
             const name = document.querySelector("#recordCreateName") as HTMLInputElement;
-            const target = document.querySelector("#recordCreateTarget") as HTMLInputElement;
+            const value = document.querySelector("#recordCreateTarget") as HTMLInputElement;
             let invalid = false;
+            if (!type.validity.valid) {
+                invalid = true;
+                type.classList.add("input-error");
+            };
             if (!name.validity.valid) {
                 invalid = true;
                 name.classList.add("input-error");
             };
-            if (!target.validity.valid) {
+            if (!value.validity.valid) {
                 invalid = true;
-                target.classList.add("input-error");
+                value.classList.add("input-error");
             };
             if (!record_create_domain) {
                 invalid = true;
                 error.innerText = "No domain selected. Please reload and try again";
             }
             if (!invalid) {
-                const request = await fetch(`/api/domains/${record_create_domain}/records/${name.value}`, {
+                const request = await fetch(`/api/domains/${record_create_domain}/records`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        target: target.value,
-                        searchable: (document.querySelector("#recordCreateSearchable") as HTMLInputElement).checked,
+                        type: type.value,
+                        name: name.value,
+                        value: value.value,
                     }),
                 });
                 if (request.status === 400) {
                     error.innerText = "Missing or invalid parameters";
                     name.classList.add("input-error");
-                    target.classList.add("input-error");
+                    value.classList.add("input-error");
                 } else if (request.status === 401) {
                     document.location = "/login";
                 } else if (request.status === 404) {
                     location.reload();
                 } else if (request.status === 409) {
-                    error.innerText = "Subdomain already exists";
+                    error.innerText = "Record already exists";
                     name.classList.add("input-error");
                 } else if (request.status === 200) {
-                    error.innerText = "Subdomain registered";
+                    error.innerText = "Record registered";
                     error.style.color = "var(--wxp-clr-success-400)";
                     sessionStorage.setItem("domain_selected_reload", record_create_domain);
                     location.reload();
                 } else {
                     const message = await request.json().catch(() => ({error: "Request failed"}));
-                    error.innerText = `Failed to add subdomain (${request.status})\n${message.error ?? ""}`;
+                    error.innerText = `Failed to add record (${request.status})\n${message.error ?? ""}`;
                 };
             };
         } catch (e:any) {
             console.error(e);
-            error.innerText = `Failed to add subdomain\n${e.message}`;
+            error.innerText = `Failed to add record\n${e.message}`;
         };
         button.dataset.actionState = "save";
     });

@@ -8,6 +8,14 @@ declare namespace App {
     }
 }
 
+interface UserPublicMetadata {
+    staff?: boolean;
+}
+interface UserPrivateMetadata {
+    owned_domains: string[];
+    reserved_tlds: string[];
+}
+
 interface ImportMetaEnv {
     readonly PORT: string;
 

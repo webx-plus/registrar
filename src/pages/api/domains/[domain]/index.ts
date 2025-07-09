@@ -45,7 +45,7 @@ export const PUT:APIRoute = async (context) => {
             note: body.note ?? "",
         });
         const user = await clerkClient(context).users.getUser(locals.auth().userId);
-        console.log(user.privateMetadata);
+
         await clerkClient(context).users.updateUser(locals.auth().userId, {
             privateMetadata: {
                 ...user.privateMetadata,
