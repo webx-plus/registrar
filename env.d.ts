@@ -16,6 +16,13 @@ interface UserPrivateMetadata {
     reserved_tlds: string[];
 }
 
+declare global {
+    interface CustomJwtSessionClaims {
+        userId: string;
+        public_metadata: UserPublicMetadata;
+    }
+}
+
 interface ImportMetaEnv {
     readonly PORT: string;
 

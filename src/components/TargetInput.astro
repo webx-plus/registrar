@@ -11,6 +11,10 @@ const { id, type = "default", thingy, value } = Astro.props;
 
 const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA-Z0-9-]{1,61})?[a-zA-Z0-9])\.)+[a-zA-Z]{2,63}))(:[0-9]{1,5})?(\/[a-zA-Z0-9-_%\+]+)*\/?$";
 
+const is_valid = !value || value.match(target_regex);
+
+const class_name = "domain-target " + (is_valid ? "" : "input-error");
+
 ---
 
 
@@ -18,7 +22,7 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
 
 <div class="target-input">
     <div class="flex v-center gap-050">
-        {thingy === "record" ? <p class="domain-target" data-record-field="target">{value}</p> : <p class="domain-target" data-domain-field="target">{value}</p>}
+        {thingy === "record" ? <p class={class_name} data-record-field="value">{value}</p> : <p class={class_name} data-domain-field="value">{value}</p>}
         <slot />
         <button class="nostyles pointer push-right" type="button" onclick="openModal('targetDetailsModal')">
             <i class="bx bx-info-circle" aria-label="Click to view details about target validation"></i>
@@ -46,6 +50,23 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         display: none;
         color: var(--wxp-clr-danger-400);
     }
+
+    [contenteditable="true"] {
+        border: 1px solid var(--wxp-clr-text-600);
+        border-radius: 5px;
+        padding: 1px 5px;
+        min-width: min(100%, 25ch);
+        font-size: .9em;
+    }
+    [contenteditable="true"]:is(:hover, :focus-visible) {
+        outline: 1px solid transparent;
+    }
+    [contenteditable="true"].input-error {
+        border-color: var(--wxp-clr-danger-400)
+    }
+    [contenteditable="true"].input-error:is(:focus-visible) {
+        border-color: var(--wxp-clr-warning-400);
+    }
 </style>
 
 <script>
@@ -58,7 +79,7 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
     ]
 
     targetInputs.forEach(x => {
-        const input = (x.querySelector("input") as HTMLInputElement) ?? (x.querySelector("[data-domain-field='target']") as HTMLParagraphElement) ?? (x.querySelector("[data-record-field='target']") as HTMLParagraphElement);
+        const input = (x.querySelector("input") as HTMLInputElement) ?? (x.querySelector("[data-domain-field='value']") as HTMLParagraphElement) ?? (x.querySelector("[data-record-field='value']") as HTMLParagraphElement);
         const note = x.querySelector(".input-note") as HTMLParagraphElement;
         const notallowed = x.querySelector(".notallowed-domain") as HTMLParagraphElement;
         input.addEventListener("input", async() => {

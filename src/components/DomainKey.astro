@@ -1,0 +1,44 @@
+---
+
+export type Props = {
+    name: string;
+    key: string;
+}
+
+const { name, key } = Astro.props;
+
+---
+
+<div class="domain-created">
+    <div class="flex v-center gap-050">
+        <h3 class="h5">Domain Key</h3>
+        <button class="domain-created-close | push-right nostyles pointer" onclick="this.closest('.domain-created').remove()">
+            <i class="bx bx-x"></i>
+        </button>
+    </div>
+    <p>Here is the Domain Key for <b>{name}</b>. Keep it somewhere safe as you won't be able to view it again</p>
+    <div class="flex v-center gap-100">
+        <p><code>{key}</code></p>
+        <button class="nostyles pointer" onclick=`navigator.clipboard.writeText("${key}");`></button>
+            <i class="bx bx-copy"></i>
+        </button>
+    </div>
+</div>
+
+<style>
+    .domain-created {
+        background: var(--wxp-clr-danger-800);
+        border: 1px solid var(--wxp-clr-dark-300);
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    .domain-created-close {
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+    }
+    .domain-created b {
+        color: var(--wxp-clr-text-200);
+    }
+</style>

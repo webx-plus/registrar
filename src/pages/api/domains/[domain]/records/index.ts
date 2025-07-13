@@ -19,10 +19,8 @@ export const PUT:APIRoute = async ({ locals, params, request }) => {
         if (body.name.length < DOMAIN_MIN_LENGTH || body.name.length > DOMAIN_MAX_LENGTH) return new Response(JSON.stringify({ success: false, error: `name length must be between ${DOMAIN_MIN_LENGTH} and ${DOMAIN_MAX_LENGTH}` }), { status: 400 });
         if (!RECORD_REGEX.test(body.name)) return new Response(JSON.stringify({ success: false, error: "name must only contain letters, numbers, and hyphens & dots" }), { status: 400 });
 
-        let name = body.name.replace(/^@/g, params.domain);
-        if (!name.endsWith(params.domain)) name += "." + params.domain;
-        const result = await sendDNSRequest(`domains/${params.domain}/records`, "PUT", locals.auth().sessionClaims.userId ?? "", {
-            name,
+        const result = await sendDNSRequest(`domains/${params.domain}/records`, "PUT", locals.auth().userId ?? "", {
+            name: body.name,
             type: body.type,
             value: body.value,
         });

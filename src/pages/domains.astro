@@ -1,6 +1,7 @@
 ---
-import type * as types from "../../types.ts";
-import { sendDNSRequest } from "../scripts/utils.ts";
+import type * as types from "@/lib/types";
+import { sendDNSRequest } from "@/scripts/utils";
+import api from "@/lib/api"
 
 import Layout from "../layouts/Primary.astro";
 import Modal from "../layouts/Modal.astro";
@@ -9,57 +10,44 @@ import Dropdown from "../components/Dropdown.astro";
 import Domain from "../components/Domain.astro";
 import PagedController from "../components/PagedController.astro";
 import TargetInput from "../components/TargetInput.astro";
+import DomainKey from "../components/DomainKey.astro";
 
 const userId = Astro.locals.auth().sessionClaims!.userId as string;
 if (!userId) Astro.redirect("https://accounts.webxplus.org/login");
 
-type TLDResponse = {
-    status: number;
-    data: {
-        valid: string[];
-        available: string[];
-        info: {
-            [tld: string]: {
-                reserved: boolean;
-            }
-        }
-    }
-}
-type DomainResponse = {
-    status: number;
-    data: types.Domain[];
-}
+const domains = await api.getDomains({owned: true}, userId).catch(e => console.log(e));
+const tlds = await api.getTLDs().catch(e => console.log(e));
+if (!domains) throw new Error("Failed to load domains");
+if (!tlds) throw new Error("Failed to load TLDs");
 
-const domain_request = await sendDNSRequest("domains?owned=true", "GET", userId) as DomainResponse;
-if (domain_request.status != 200) console.log("Error loading Domains");
-const domains = domain_request.status == 200 ? domain_request.data : [];
-
-const tld_request = await sendDNSRequest("tlds", "GET", userId) as TLDResponse;
-if (tld_request.status != 200) console.log("Error loading TLDs");
-let tlds = tld_request.status == 200 ? tld_request.data.available : [] as string[];
 const user = await Astro.locals.currentUser();
 if (!user) return Astro.redirect("https://accounts.webxplus.org/login");
 
 const user_tlds = user.privateMetadata.reserved_tlds ?? [];
-tlds = tlds.filter(x => (tld_request.data.info[x] ? !tld_request.data.info[x].reserved : true) || user_tlds.includes(x));
+const availabe_tlds = tlds.available.filter(x => (tlds.info[x] ? !tlds.info[x].reserved : true) || user_tlds.includes(x));
 
 const sort_method = Astro.cookies.get("domain_sort")?.value ?? "updated";
-
-//sort according to the method
 const sorted_domains = domains.sort((a, b) => {
     if (sort_method === "name") return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-    /* @ts-ignore */
     if (sort_method === "created") return parseInt(b.created_at) - parseInt(a.created_at);
-    /* @ts-ignore */
     if (sort_method === "updated") return parseInt(b.updated_at) - parseInt(a.updated_at);
     return 0;
 });
 
 const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA-Z0-9-]{1,61})?[a-zA-Z0-9])\.)+[a-zA-Z]{2,63}))(:[0-9]{1,5})?(\/[a-zA-Z0-9-_%\+]+)*\/?$";
 
+let registered_domain = {} as {name: string, key: string};
+if (Astro.cookies.has("register_domain")) {
+    try {
+        registered_domain = JSON.parse(Astro.cookies.get("register_domain")?.value!);
+        Astro.cookies.delete("register_domain");
+    } catch(e) {};
+};
+
 ---
 
 <Layout title="My Domains">
+    {registered_domain && registered_domain.name ? <DomainKey name={registered_domain.name} key={registered_domain.key} /> : ""}
     <div class="flex v-center" id="domainContainer">
         <h2 class="h2">My Domains</h2>
         <button class="domain-create | push-right nostyles pointer" onclick="openModal('domainRegisterModal')">Register a new domain</button>
@@ -94,15 +82,15 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         <div class="form-group">
             <label for="domainRegisterName" class="label">Domain name</label>
             <div class="input gap-200">
-                <input type="text" id="domainRegisterName" class="nostyles f1" maxlength="24" minlength="3" pattern="[a-z0-9-]{3,24}" data-domain-input="domain">
+                <input type="text" id="domainRegisterName" class="nostyles f1" maxlength="24" minlength="1" pattern="[a-z0-9-]{1,24}" data-domain-input="domain">
                 <div class="push-right flex v-center">
                     <p class="input-addon">.</p>
                     <select id="domainRegisterTld" class="nostyles">
-                        {tlds.sort((z, y) => z.localeCompare(y)).map((y:any) => <option value={y} selected={y === "webx"}>{y}</option>)}
+                        {availabe_tlds.sort((z, y) => z.localeCompare(y)).map((y:any) => <option value={y} selected={y === "webx"}>{y}</option>)}
                     </select>
                 </div>
             </div>
-            <p class="input-note">3 - 24 characters, alphanumeric and hyphens only, case insensitive</p>
+            <p class="input-note">1 - 24 characters, alphanumeric and hyphens only, case insensitive</p>
         </div>
         <div class="form-group">
             <label for="domainRegisterTarget" class="label">Target</label>
@@ -138,7 +126,7 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
     <form id="recordCreateForm">
         <div class="form-group">
             <label for="recordCreateType" class="label">Type</label>
-            <select class="input">
+            <select class="input" id="recordCreateType">
                 <option value="WEB">WEB</option>
                 <option value="TXT">TXT</option>
                 <option value="RED">RED</option>
@@ -147,10 +135,10 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         <div class="form-group">
             <label for="recordCreateName" class="label">Name</label>
             <div class="input | flex v-center">
-                <input type="text" id="recordCreateName" class="nostyles f1" maxlength="24" minlength="3" pattern="[a-z0-9-.]{3,24}" data-domain-input="subdomain">
+                <input type="text" id="recordCreateName" class="nostyles f1" maxlength="24" minlength="1" pattern="[a-z0-9-.]{1,24}" data-domain-input="subdomain">
                 <p class="input-addon push-right" id="recordCreateDomain"></p>
             </div>
-            <p class="input-note">3 - 24 characters, alphanumeric and hyphens & dots (.) only, case insensitive</p>
+            <p class="input-note">1 - 24 characters, alphanumeric and hyphens & dots (.) only, case insensitive</p>
         </div>
         <div class="form-group">
             <label for="recordCreateValue" class="label">Value</label>
@@ -178,7 +166,9 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" crossorigin="anonymous" async defer></script>
 
 <script>
-    import type * as types from "../../types.ts";
+    import { actions } from "astro:actions";
+
+    import type * as types from "@/lib/types";
 
     declare global {
         interface Window {
@@ -188,16 +178,9 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
 
     let captcha_result_token:string|null;
     async function captchaVerify(token:string) {
-        const request = await fetch("/api/captcha", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({token}),
-        });
-        if (request.status === 200) {
-            let result = await request.json();
-            captcha_result_token = result.data.result_token;
+        const { data, error } = await actions.captcha.verify({ token });
+        if (!error) {
+            captcha_result_token = data.result_token;
             document.querySelector(".cf-turnstile")!.classList.remove("input-error");
         } else {
             captchaReset();
@@ -227,28 +210,6 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
             x.value = x.value.toLowerCase().replaceAll(' ', '-').replace(regex, '');
         });
     };
-    if (sessionStorage.getItem("domain_create_key")) {
-        const notice = document.createElement("div");
-        notice.classList.add("domain-created");
-        notice.innerHTML = `
-            <div class="flex v-center gap-050">
-                <h3 class="h5">Domain Key</h3>
-                <button class="domain-created-close | push-right nostyles pointer" onclick="this.closest('.domain-created').remove()">
-                    <i class="bx bx-x"></i>
-                </button>
-            </div>
-            <p>Here is the Domain Key for <b>${sessionStorage.getItem("domain_create_name") ?? "domain"}</b>. Keep it somewhere safe as you won't be able to view it again</p>
-            <div class="flex v-center gap-100">
-                <p><code>${sessionStorage.getItem("domain_create_key")}</code></p>
-                <button class="nostyles pointer" onclick="navigator.clipboard.writeText('${sessionStorage.getItem("domain_create_key")}')">
-                    <i class="bx bx-copy"></i>
-                </button>
-            </div>
-        `;
-        document.querySelector("main")!.insertBefore(notice, document.querySelector("#domainContainer"));
-        sessionStorage.removeItem("domain_create_key");
-        sessionStorage.removeItem("domain_create_name");
-    };
 
     const registerForm = document.querySelector("#domainRegisterForm") as HTMLFormElement;
     registerForm.addEventListener("submit", async e => {
@@ -256,8 +217,8 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         const button = registerForm.querySelector("button[type='submit']") as HTMLButtonElement;
         if (button.dataset.actionState === "loading") return;
         button.dataset.actionState = "loading";
-        const error = registerForm.querySelector(".form-result") as HTMLParagraphElement;
-        error.innerText = "";
+        const result = registerForm.querySelector(".form-result") as HTMLParagraphElement;
+        result.innerText = "";
         try {
             const name = document.querySelector("#domainRegisterName") as HTMLInputElement;
             const tld = document.querySelector("#domainRegisterTld") as HTMLSelectElement;
@@ -284,40 +245,31 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
                 };
             };
             if (!invalid) {
-                const request = await fetch(`/api/domains/${name.value}.${tld.value}`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        target: target.value,
-                        note: (document.querySelector("#domainRegisterNote") as HTMLInputElement).value,
-                        searchable: (document.querySelector("#domainRegisterSearchable") as HTMLInputElement).checked,
-                        captcha_token: captcha_result_token,
-                    }),
+                const { data, error } = await actions.domains.create({
+                    name: name.value,
+                    tld: tld.value,
+                    target: target.value,
+                    note: (document.querySelector("#domainRegisterNote") as HTMLInputElement).value,
+                    searchable: (document.querySelector("#domainRegisterSearchable") as HTMLInputElement).checked,
+                    captcha_token: captcha_result_token!,
                 });
-                if (request.status === 400) {
-                    error.innerText = "Invalid domain name or TLD";
-                } else if (request.status === 409) {
-                    error.innerText = "Domain already exists";
-                    name.classList.add("input-error");
-                } else if (request.status === 200) {
-                    error.innerText = "Domain registered";
-                    error.style.color = "var(--wxp-clr-success-400)";
-                    const data = await request.json();
-                    sessionStorage.setItem("domain_selected_reload", data.data._id);
-                    sessionStorage.setItem("domain_create_key", data.data.secret);
-                    sessionStorage.setItem("domain_create_name", `${data.data.name}.${data.data.tld}`);
+                if (!error) {
+                    sessionStorage.setItem("domain_selected_reload", data._id);
                     location.reload();
+                } else if (error.status === 400) {
+                    result.innerText = "Invalid domain name or TLD";
+                } else if (error.status === 409) {
+                    result.innerText = "Domain already exists";
+                    name.classList.add("input-error");
                 } else {
-                    const message = await request.json().catch(() => ({error: "Request failed"}));
-                    error.innerText = `Failed to register domain (${request.status})\n${message.error ?? ""}`;
+                    result.innerText = `Failed to add record (${error.status})\n${error.message ?? ""}`;
+                    console.log(error);
                 };
-                if (request.status !== 200) window.turnstile.reset();
+                if (error) window.turnstile.reset();
             };
         } catch (e:any) {
             console.error(e);
-            error.innerText = `Failed to register domain\n${e.message}`;
+            result.innerText = `Failed to register domain\n${e.message}`;
         };
         button.dataset.actionState = "save";
     });
@@ -328,13 +280,13 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
         const button = recordCreateForm.querySelector("button[type='submit']") as HTMLButtonElement;
         if (button.dataset.actionState === "loading") return;
         button.dataset.actionState = "loading";
-        const error = recordCreateForm.querySelector(".form-result") as HTMLParagraphElement;
-        error.innerText = "";
+        const result = recordCreateForm.querySelector(".form-result") as HTMLParagraphElement;
+        result.innerText = "";
         try {
             let record_create_domain:string = (document.querySelector("#recordCreateModal") as HTMLDialogElement).dataset.createRecordId!
             const type = document.querySelector("#recordCreateType") as HTMLSelectElement;
             const name = document.querySelector("#recordCreateName") as HTMLInputElement;
-            const value = document.querySelector("#recordCreateTarget") as HTMLInputElement;
+            const value = document.querySelector("#recordCreateValue") as HTMLInputElement;
             let invalid = false;
             if (!type.validity.valid) {
                 invalid = true;
@@ -350,44 +302,39 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
             };
             if (!record_create_domain) {
                 invalid = true;
-                error.innerText = "No domain selected. Please reload and try again";
+                result.innerText = "No domain selected. Please reload and try again";
             }
             if (!invalid) {
-                const request = await fetch(`/api/domains/${record_create_domain}/records`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        type: type.value,
-                        name: name.value,
-                        value: value.value,
-                    }),
+                const { data, error } = await actions.records.create({
+                    domainId: record_create_domain,
+                    type: type.value as types.RecordType,
+                    name: name.value,
+                    value: value.value,
                 });
-                if (request.status === 400) {
-                    error.innerText = "Missing or invalid parameters";
-                    name.classList.add("input-error");
-                    value.classList.add("input-error");
-                } else if (request.status === 401) {
-                    document.location = "/login";
-                } else if (request.status === 404) {
-                    location.reload();
-                } else if (request.status === 409) {
-                    error.innerText = "Record already exists";
-                    name.classList.add("input-error");
-                } else if (request.status === 200) {
-                    error.innerText = "Record registered";
-                    error.style.color = "var(--wxp-clr-success-400)";
+                if (!error) {
+                    result.innerText = "Record registered";
+                    result.style.color = "var(--wxp-clr-success-400)";
                     sessionStorage.setItem("domain_selected_reload", record_create_domain);
                     location.reload();
+                } else if (error.status === 400) {
+                    result.innerText = "Missing or invalid parameters";
+                    name.classList.add("input-error");
+                    value.classList.add("input-error");
+                } else if (error.status === 401) {
+                    document.location = "/login";
+                } else if (error.status === 404) {
+                    location.reload();
+                } else if (error.status === 409) {
+                    result.innerText = "Record already exists";
+                    name.classList.add("input-error");
                 } else {
-                    const message = await request.json().catch(() => ({error: "Request failed"}));
-                    error.innerText = `Failed to add record (${request.status})\n${message.error ?? ""}`;
+                    result.innerText = `Failed to add record (${error.status})\n${error.message ?? ""}`;
+                    console.log(error);
                 };
             };
         } catch (e:any) {
             console.error(e);
-            error.innerText = `Failed to add record\n${e.message}`;
+            result.innerText = `Failed to add record\n${e.message}`;
         };
         button.dataset.actionState = "save";
     });
@@ -451,22 +398,6 @@ const target_regex = "^(https?\:\/\/)?((([0-9]{1,3}\.?){4})|((([a-zA-Z0-9]([a-zA
 
     #domainRegisterTld {
         min-width: 150px;
-    }
-
-    :global(.domain-created) {
-        background: var(--wxp-clr-danger-800);
-        border: 1px solid var(--wxp-clr-dark-300);
-        border-radius: 10px;
-        padding: 10px;
-        margin-bottom: 10px;
-    }
-    :global(.domain-created-close) {
-        display: grid;
-        place-items: center;
-        font-size: 30px;
-    }
-    :global(.domain-created b) {
-        color: var(--wxp-clr-text-200);
     }
 
     #domainSearch {

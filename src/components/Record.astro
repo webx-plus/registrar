@@ -1,29 +1,38 @@
 ---
-import type * as types from "../../types.ts";
+import type * as types from "@/lib/types";
 
 import TargetInput from "./TargetInput.astro";
 
-export type Props = types.Record;
+export type Props = types.DomainRecord & {
+    domain_name: string;
+};
 
-const { _id, name, type, value } = Astro.props;
+const { _id, name, type, value, domain_name } = Astro.props;
 
+
+const record_name = name.endsWith(`.${domain_name}`) ? name.replace(`.${domain_name}`, "") : name;
 
 ---
 
 
-<tr data-record-id={_id} data-record-name={name}></tr>
+<tr data-record-id={_id} data-record-name={name}>
     <td>
         <span class="record-type">{type}</span>
     </td>
     <td>
-        <span class="record-name">{name}</span>
+        <span class="record-name">{record_name}</span>
     </td>
     <td>
-        <TargetInput type="inline" value={value} thingy="record">
+        {type === "WEB" ? <TargetInput type="inline" value={value} thingy="record">
             <button class="domain-edit-button | nostyles pointer" data-record-edit="value" data-action-state="edit">
                 <i class="bx bx-pencil"></i>
             </button>
-        </TargetInput>
+        </TargetInput> : <div class="flex v-center gap-050">
+                <p class="record-value" data-record-field="value">{value ?? ""}</p>
+                <button class="domain-edit-button | nostyles pointer" data-record-edit="value" data-action-state="edit">
+                    <i class="bx bx-pencil"></i>
+                </button>
+            </div>}
     </td>
     <td>
         <button class="domain-edit-button | nostyles pointer" data-domain-action="record_delete">
@@ -33,6 +42,8 @@ const { _id, name, type, value } = Astro.props;
 </tr>
 
 <script>
+    import { actions } from "astro:actions";
+
     const recordEditButtons = document.querySelectorAll("[data-record-edit]") as NodeListOf<HTMLButtonElement>;
     for (let x of recordEditButtons) {
         x.addEventListener("click", async() => {
@@ -44,38 +55,37 @@ const { _id, name, type, value } = Astro.props;
             if (x.dataset.actionState === "edit") {
                 field.dataset.previousValue = field.innerText;
                 field.setAttribute("contenteditable", "true");
+                field.focus();
                 x.dataset.actionState = "save";
                 x.innerHTML = "<i class='bx bx-save'></i>";
             } else if (x.dataset.actionState === "save") {
                 field.setAttribute("contenteditable", "false");
                 x.dataset.actionState = "loading";
                 x.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
-
-                const request = await fetch(`/api/domains/${domain.dataset.domainId}/records/${record.dataset.recordName}`, {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        [x.dataset.recordEdit!]: field.innerText,
-                    }),
+                console.log(record.dataset.recordId);
+                const { data, error } = await actions.records.update({
+                    domainId: domain.dataset.domainId!,
+                    recordId: record.dataset.recordId!,
+                    [x.dataset.recordEdit!]: field.innerText,
                 });
-                if (request.status === 400) {
+                if (!error) {
+                    x.dataset.actionState = "edit";
+                    x.innerHTML = "<i class='bx bx-pencil'></i>";
+                } else if (error.status === 400) {
                     field.classList.add("input-error");
                     field.setAttribute("contenteditable", "true");
                     x.dataset.actionState = "save";
                     x.innerHTML = "<i class='bx bx-save'></i>";
-                } else if (request.status === 401) {
+                } else if (error.status === 401) {
                     document.location = "/login";
-                } else if (request.status === 404) {
+                } else if (error.status === 404) {
                     location.reload();
-                } else if (request.status === 200) {
+                } else if (error.status === 200) {
                     x.dataset.actionState = "edit";
                     x.innerHTML = "<i class='bx bx-pencil'></i>";
                 } else {
-                    console.log(request);
-                    console.log(await request.json());
-                    x.dataset.actionResult = `${request.status}`;
+                    console.log(error);
+                    x.dataset.actionResult = `${error.status}`;
                     x.dataset.actionState = "error";
                     x.innerHTML = "<i class='bx bx-error'></i>";
                 };
@@ -132,22 +142,20 @@ const { _id, name, type, value } = Astro.props;
                 if (!domain) return;
                 if (!record) return;
                 if (!confirm(`Are you sure you want to delete the record for ${record.dataset.recordFull}?`)) return;
-                const request = await fetch(`/api/domains/${domain.dataset.domainId}/records/${record.dataset.recordName}`, {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
+                const { data, error } = await actions.records.delete({
+                    domainId: domain.dataset.domainId!,
+                    recordId: record.dataset.recordId!,
                 });
-                if (request.status === 401) {
-                    document.location = "/login";
-                } else if (request.status === 404) {
-                    location.reload();
-                } else if (request.status === 200) {
+                if (!error) {
                     return record.remove();
+                } else if (error.status === 401) {
+                    document.location = "/login";
+                } else if (error.status === 404) {
+                    location.reload();
                 } else {
-                    console.log(request.status);
+                    console.log(error);
                     icon.classList.add("bx-error");
-                    x.dataset.actionResult = `${request.status}`;
+                    x.dataset.actionResult = `${error.status}`;
                     x.dataset.actionState = "error";
                 };
             } catch (e:any) {
@@ -161,6 +169,23 @@ const { _id, name, type, value } = Astro.props;
             if (x.dataset.actionState === "loading") x.dataset.actionState = "delete";
         });
     };
+
+    document.addEventListener("dblclick", e => {
+        const target = e.target as HTMLElement;
+        const record = target.closest("[data-record-field]") as HTMLElement;
+        recordEditFields.forEach(x => {
+            if (record && record === x) return;
+            const record2 = x.closest("tr") as HTMLElement;
+            const editButton = record2.querySelector(`[data-record-edit="${x.dataset.recordField}"]`) as HTMLButtonElement;
+            const field = record2.querySelector(`[data-record-field="${x.dataset.recordField}"]`) as HTMLInputElement;
+            if (!editButton) return;
+            if (editButton.dataset.actionState != "save") return;
+            field.innerText = field.dataset.previousValue!;
+            field.setAttribute("contenteditable", "false");
+            editButton.dataset.actionState = "edit";
+            editButton.innerHTML = "<i class='bx bx-pencil'></i>";
+        });
+    });
 </script>
 
 <style>
@@ -170,5 +195,41 @@ const { _id, name, type, value } = Astro.props;
     }
     .record-domain {
         color: var(--wxp-clr-text-600);
+    }
+
+    .domain-edit-button {
+        display: flex;
+        transition: .3s;
+    }
+    .domain-edit-button[data-action-state="edit"] {
+        color: var(--wxp-clr-text-600);
+    }
+    .domain-edit-button[data-action-state="error"] {
+        color: var(--wxp-clr-danger-400);
+    }
+    .domain-edit-button[data-action-state="saved"] {
+        color: var(--wxp-clr-success-400);
+    }
+
+    p.domain-edit-button[data-action-state="edit"],
+    p.domain-edit-button[data-action-state="save"] {
+        display: none;
+    }
+
+    [contenteditable="true"] {
+        border: 1px solid var(--wxp-clr-text-600);
+        border-radius: 5px;
+        padding: 1px 5px;
+        min-width: min(100%, 25ch);
+        font-size: .9em;
+    }
+    [contenteditable="true"]:is(:hover, :focus-visible) {
+        outline: 1px solid transparent;
+    }
+    [contenteditable="true"].input-error {
+        border-color: var(--wxp-clr-danger-400)
+    }
+    [contenteditable="true"].input-error:is(:focus-visible) {
+        border-color: var(--wxp-clr-warning-400);
     }
 </style>

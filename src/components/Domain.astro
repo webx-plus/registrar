@@ -1,5 +1,5 @@
 ---
-import type * as types from "../../types.ts";
+import type * as types from "@/lib/types";
 
 import Record from "./Record.astro";
 import TargetInput from "./TargetInput.astro";
@@ -60,12 +60,14 @@ const { _id, name, tld, note, searchable, records, created_at, updated_at, on_fi
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>{records.map(x => <Record {...x} />)}</tbody>
+            <tbody>{records.map(x => <Record {...x} domain_name={name + "." + tld} />)}</tbody>
         </table>
     </div>
 </div>
 
 <script>
+    import { actions } from "astro:actions";
+
     let record_create_domain:string = "";
 
     const domainExpandButtons = document.querySelectorAll(".domain-expand-button") as NodeListOf<HTMLButtonElement>;
@@ -74,7 +76,11 @@ const { _id, name, tld, note, searchable, records, created_at, updated_at, on_fi
             const domain = document.querySelector(`[data-domain-id="${x.dataset.domainExpand}"]`);
             if (!domain) return;
             domain.setAttribute("aria-expanded", `${domain.getAttribute("aria-expanded") === "false"}`);
+            if (domain.getAttribute("aria-expanded") === "true") sessionStorage.setItem("domain_selected_reload", x.dataset.domainExpand!);
         });
+
+        const domain_reload_id = sessionStorage.getItem("domain_selected_reload");
+        if (domain_reload_id === x.dataset.domainExpand) x.click();
     };
 
     const domainEditButtons = document.querySelectorAll("[data-domain-edit]") as NodeListOf<HTMLButtonElement>;
@@ -95,31 +101,25 @@ const { _id, name, tld, note, searchable, records, created_at, updated_at, on_fi
                 x.dataset.actionState = "loading";
                 x.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
 
-                const request = await fetch(`/api/domains/${domain.dataset.domainId}`, {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        [x.dataset.domainEdit!]: field.innerText,
-                    }),
+                const { data, error } = await actions.domains.update({
+                    domainId: domain.dataset.domainId!,
+                    [x.dataset.domainEdit!]: field.innerText,
                 });
-                if (request.status === 400) {
+                if (!error) {
+                    x.dataset.actionState = "edit";
+                    x.innerHTML = "<i class='bx bx-pencil'></i>";
+                } else if (error.status === 400) {
                     field.classList.add("input-error");
                     field.setAttribute("contenteditable", "true");
                     x.dataset.actionState = "save";
                     x.innerHTML = "<i class='bx bx-save'></i>";
-                } else if (request.status === 401) {
+                } else if (error.status === 401) {
                     document.location = "/login";
-                } else if (request.status === 404) {
+                } else if (error.status === 404) {
                     location.reload();
-                } else if (request.status === 200) {
-                    x.dataset.actionState = "edit";
-                    x.innerHTML = "<i class='bx bx-pencil'></i>";
                 } else {
-                    console.log(request);
-                    console.log(await request.json());
-                    x.dataset.actionResult = `${request.status}`;
+                    console.log(error);
+                    x.dataset.actionResult = `${error.status}`;
                     x.dataset.actionState = "error";
                     x.innerHTML = "<i class='bx bx-error'></i>";
                 };
@@ -127,7 +127,6 @@ const { _id, name, tld, note, searchable, records, created_at, updated_at, on_fi
                 alert(`Action failed with status (${x.dataset.actionResult})\nPlease see the console for more details`);
             };
         });
-
     };
 
     const domainToggleButtons = document.querySelectorAll(".toggle [data-domain-field]") as NodeListOf<HTMLInputElement>;
@@ -140,24 +139,26 @@ const { _id, name, tld, note, searchable, records, created_at, updated_at, on_fi
                 status.dataset.actionState = "loading";
                 status.innerHTML = "<i class='bx bx-loader bx-spin'></i>";
 
-                const request = await fetch(`/api/domains/${domain.dataset.domainId}`, {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        [x.dataset.domainField!]: x.checked,
-                    }),
+                const { data, error } = await actions.domains.update({
+                    domainId: domain.dataset.domainId!,
+                    [x.dataset.domainField!]: x.checked,
                 });
-                if (request.status === 400) {
+                if (!error) {
+                    status.dataset.actionState = "saved";
+                    status.innerHTML = "<i class='bx bx-check'></i>";
+                    setTimeout(() => {
+                        status.dataset.actionState = "edit";
+                        status.innerHTML = "<i class='bx bx-pencil'></i>";
+                    }, 10_000);
+                } else if (error.status === 400) {
                     x.closest(".toggle")!.classList.add("input-error");
                     status.dataset.actionState = "edit";
                     status.innerHTML = "<i class='bx bx-pencil'></i>";
-                } else if (request.status === 401) {
+                } else if (error.status === 401) {
                     document.location = "/login";
-                } else if (request.status === 404) {
+                } else if (error.status === 404) {
                     location.reload();
-                } else if (request.status === 200) {
+                } else if (error.status === 200) {
                     status.dataset.actionState = "saved";
                     status.innerHTML = "<i class='bx bx-check'></i>";
                     setTimeout(() => {
@@ -165,9 +166,8 @@ const { _id, name, tld, note, searchable, records, created_at, updated_at, on_fi
                         status.innerHTML = "<i class='bx bx-pencil'></i>";
                     }, 10_000);
                 } else {
-                    console.log(request);
-                    console.log(await request.json());
-                    status.dataset.actionResult = `${request.status}`;
+                    console.log(error);
+                    status.dataset.actionResult = `${error.status}`;
                     status.dataset.actionState = "error";
                     status.innerHTML = "<i class='bx bx-error'></i>";
                 };
@@ -215,6 +215,23 @@ const { _id, name, tld, note, searchable, records, created_at, updated_at, on_fi
             (document.querySelector("#recordCreateModal") as HTMLDialogElement).showModal();
         });
     };
+
+    document.addEventListener("dblclick", e => {
+        const target = e.target as HTMLElement;
+        const domain = target.closest("[data-domain-field]") as HTMLElement;
+        domainEditFields.forEach(x => {
+            if (domain && domain === x) return;
+            const domain2 = x.closest(".domain-card") as HTMLElement;
+            const editButton = domain2.querySelector(`[data-domain-edit="${x.dataset.domainField}"]`) as HTMLButtonElement;
+            const field = domain2.querySelector(`[data-domain-field="${x.dataset.domainField}"]`) as HTMLInputElement;
+            if (!editButton) return;
+            if (editButton.dataset.actionState != "save") return;
+            field.innerText = field.dataset.previousValue!;
+            field.setAttribute("contenteditable", "false");
+            editButton.dataset.actionState = "edit";
+            editButton.innerHTML = "<i class='bx bx-pencil'></i>";
+        });
+    });
 </script>
 
 <style>
