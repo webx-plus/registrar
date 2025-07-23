@@ -20,7 +20,7 @@ const class_name = "domain-target " + (is_valid ? "" : "input-error");
 
 {type === "inline" ? 
 
-<div class="target-input">
+<div class="target-input" data-target-input={id} data-target-input-inline="true">
     <div class="flex v-center gap-050">
         {thingy === "record" ? <p class={class_name} data-record-field="value">{value}</p> : <p class={class_name} data-domain-field="value">{value}</p>}
         <slot />
@@ -31,7 +31,7 @@ const class_name = "domain-target " + (is_valid ? "" : "input-error");
     <p class="input-note | notallowed-domain">You must use GitHub Pages instead of raw github URLs</p>
 </div>
 
-: <div class="target-input">
+: <div class="target-input" data-target-input={id} data-target-input-inline="false">
     <input type="text" id={id} class="input" value={value} pattern={target_regex} />
     <p class="input-note | notallowed-domain">Raw github URLs are not supported. Please publish your site to GitHub Pages and use that URL instead</p>
     <div class="details | flex v-center">
@@ -43,6 +43,9 @@ const class_name = "domain-target " + (is_valid ? "" : "input-error");
 <style>
     .target-input {
         margin-bottom: .5rem;
+        /* width: max-content; */
+    }
+    .target-input[data-target-input-inline="true"] {
         width: max-content;
     }
     .notallowed-domain {

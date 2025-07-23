@@ -127,7 +127,7 @@ if (Astro.cookies.has("register_domain")) {
         <div class="form-group">
             <label for="recordCreateType" class="label">Type</label>
             <select class="input" id="recordCreateType">
-                <option value="WEB">WEB</option>
+                <option value="WEB" selected>WEB</option>
                 <option value="TXT">TXT</option>
                 <option value="RED">RED</option>
             </select>
@@ -135,14 +135,16 @@ if (Astro.cookies.has("register_domain")) {
         <div class="form-group">
             <label for="recordCreateName" class="label">Name</label>
             <div class="input | flex v-center">
-                <input type="text" id="recordCreateName" class="nostyles f1" maxlength="24" minlength="1" pattern="[a-z0-9-.]{1,24}" data-domain-input="subdomain">
+                <input type="text" id="recordCreateName" class="nostyles f1" maxlength="24" minlength="1" pattern="(@|[a-z0-9-.]{1,24})" data-domain-input="subdomain">
                 <p class="input-addon push-right" id="recordCreateDomain"></p>
             </div>
             <p class="input-note">1 - 24 characters, alphanumeric and hyphens & dots (.) only, case insensitive</p>
+            <p class="input-note">Use @ for root</p>
         </div>
         <div class="form-group">
             <label for="recordCreateValue" class="label">Value</label>
-            <input type="text" id="recordCreateValue" class="input">
+            <input type="text" id="recordCreateValue" class="input" style="display: none;">
+            <TargetInput id="recordCreateTarget" />
         </div>
         <br />
         <div class="flex v-center gap-200">
@@ -206,7 +208,7 @@ if (Astro.cookies.has("register_domain")) {
     const domainInput = document.querySelectorAll("[data-domain-input]") as NodeListOf<HTMLInputElement>;
     for (let x of domainInput) {
         x.addEventListener("input", async() => {
-            const regex = new RegExp(`[^a-z0-9-${x.dataset.domainInput === "subdomain" ? "." : ""}]`, "g");
+            const regex = new RegExp(`[^a-z0-9@-${x.dataset.domainInput === "subdomain" ? "." : ""}]`, "g");
             x.value = x.value.toLowerCase().replaceAll(' ', '-').replace(regex, '');
         });
     };
@@ -287,6 +289,7 @@ if (Astro.cookies.has("register_domain")) {
             const type = document.querySelector("#recordCreateType") as HTMLSelectElement;
             const name = document.querySelector("#recordCreateName") as HTMLInputElement;
             const value = document.querySelector("#recordCreateValue") as HTMLInputElement;
+            const target = document.querySelector("#recordCreateTarget") as HTMLInputElement;
             let invalid = false;
             if (!type.validity.valid) {
                 invalid = true;
@@ -296,10 +299,20 @@ if (Astro.cookies.has("register_domain")) {
                 invalid = true;
                 name.classList.add("input-error");
             };
-            if (!value.validity.valid) {
-                invalid = true;
-                value.classList.add("input-error");
-            };
+            let value_text = "";
+            if (type.value === "WEB") {
+                if (!target.validity.valid) {
+                    invalid = true;
+                    target.classList.add("input-error");
+                };
+                value_text = target.value;
+            } else {
+                if (!value.validity.valid) {
+                    invalid = true;
+                    value.classList.add("input-error");
+                };
+                value_text = value.value;
+            }
             if (!record_create_domain) {
                 invalid = true;
                 result.innerText = "No domain selected. Please reload and try again";
@@ -309,7 +322,7 @@ if (Astro.cookies.has("register_domain")) {
                     domainId: record_create_domain,
                     type: type.value as types.RecordType,
                     name: name.value,
-                    value: value.value,
+                    value: value_text,
                 });
                 if (!error) {
                     result.innerText = "Record registered";
@@ -343,6 +356,20 @@ if (Astro.cookies.has("register_domain")) {
     (document.querySelectorAll("[name='domainSort']") as NodeListOf<HTMLInputElement>).forEach(x => x.addEventListener("change", () => {
         sortDomains(x.value);
     }));
+
+    const recordCreateType = document.querySelector("#recordCreateType") as HTMLSelectElement;
+    recordCreateType.addEventListener("change", () => {
+        const value2 = recordCreateType.value as types.RecordType;
+        const target = document.querySelector("[data-target-input='recordCreateTarget']") as HTMLDivElement;
+        const value = document.querySelector("#recordCreateValue") as HTMLInputElement;
+        if (value2 === "WEB") {
+            target.style.display = "";
+            value.style.display = "none";
+        } else {
+            target.style.display = "none";
+            value.style.display = "";
+        };
+    });
 
     function sortDomains(order: string) {
         console.log("Sorting");
