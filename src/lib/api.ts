@@ -10,6 +10,7 @@ async function sendDNSRequest(url: string, method: "GET" | "PUT" | "POST" | "PAT
 		headers: {
 			"Content-Type": "application/json",
 			"Authorization": `Registrar ${DNS_REGISTRAR_TOKEN}`,
+			"X-WXP-Internal": "true",
 			...(userId ? { "X-Requesting-User": userId } : {}),
 		},
 		body: method === "GET" ? undefined : JSON.stringify(data),

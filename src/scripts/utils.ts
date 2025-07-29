@@ -12,6 +12,7 @@ async function sendDNSRequest(url:string, method:"GET" | "PUT" | "PATCH" | "DELE
             "Content-Type": "application/json",
             "Authorization": `Registrar ${import.meta.env.DNS_REGISTRAR_TOKEN}`,
             "X-Requesting-User": user_id ?? undefined,
+            "X-WXP-Internal": "true"
         },
         body: method === "GET" ? undefined : JSON.stringify(data),
     });
